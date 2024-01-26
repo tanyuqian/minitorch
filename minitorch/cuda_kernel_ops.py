@@ -22,7 +22,7 @@ import pycuda.driver as cuda
 
 # Load the shared library
 lib = ctypes.CDLL("minitorch/cuda_kernels/combine.so")
-lib_mm = ctypes.CDLL("minitorch/cuda_kernels/matrix_multiply.so")
+lib_mm = ctypes.CDLL("minitorch/cuda_kernels/matmul.so")
 datatype = np.float32
 
 # function map
