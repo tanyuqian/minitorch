@@ -15,7 +15,6 @@ import torch
 import minitorch
 from minitorch import DecoderLM
 from minitorch.cuda_kernel_ops import CudaKernelOps
-from minitorch.fast_ops import FastOps
 
 
 def get_tokenizer(examples, vocab_size, src_key, tgt_key, workdir):
@@ -28,7 +27,8 @@ def get_tokenizer(examples, vocab_size, src_key, tgt_key, workdir):
         special_tokens=[f'<eos_{src_key}>', f'<eos_{tgt_key}>', '<pad>'])
 
     tokenizer.save(f'{workdir}/tokenizer.json')
-    assert os.path.exists(f'{workdir}/config.json')
+    json.dump({'model_type': 'gpt2'}, open(f'{workdir}/config.json', 'w'))
+
     tokenizer = AutoTokenizer.from_pretrained(
         workdir,
         eos_token=None,
