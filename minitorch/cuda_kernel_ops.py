@@ -23,7 +23,7 @@ import pycuda.driver as cuda
 
 # Load the shared library
 lib = ctypes.CDLL("minitorch/cuda_kernels/combine.so")
-lib_mm = ctypes.CDLL("minitorch/cuda_kernels/matmul.so")
+lib_mm = ctypes.CDLL("minitorch/cuda_kernels/batched_matmul.so")
 datatype = np.float32
 
 # function map
@@ -227,46 +227,71 @@ class CudaKernelOps(TensorOps):
                                     b.shape[-1])
         assert a.shape[0] == b.shape[0]
 
-        # Define the argument types for the CUDA kernel
-        lib_mm.matmul_cublas.argtypes = [
-            ctypes.c_void_p,  # Pointer to matrix A on the device
-            ctypes.c_void_p,  # Pointer to matrix B on the device
-            ctypes.c_void_p,  # Pointer to matrix C on the device
-            ctypes.c_int,  # Matrix A rows (m)
-            ctypes.c_int,  # Matrix B columns (n)
-            ctypes.c_int  # Shared dimension (k)
-        ]
-        lib_mm.matmul_cublas.restype = None
+        b, m, n, k = a.shape[0], a.shape[1], b.shape[1], a.shape[2]
+        A, B = a, b
 
-        a_np, b_np = a.to_numpy(), b.to_numpy()
+        # Convert A and B to column-major order
+        A_fortran = np.transpose(A, (0, 2, 1))
+        B_fortran = np.transpose(B, (0, 2, 1))
 
-        cs = []
-        m, n, k = a.shape[-2], b.shape[-1], a.shape[-1]
-        for i in range(a.shape[0]):
-            c_i = np.zeros((m, n), dtype=a_np[i].dtype)
+        # Flatten A and B for sending to GPU
+        A_flat = A_fortran.reshape(b, -1)
+        B_flat = B_fortran.reshape(b, -1)
 
-            # Transpose matrices a and b for column-major order
-            a_transposed = np.asfortranarray(a_np[i])
-            b_transposed = np.asfortranarray(b_np[i])
+        # Allocate memory on GPU
+        A_gpu = cuda.mem_alloc(A_flat.nbytes)
+        B_gpu = cuda.mem_alloc(B_flat.nbytes)
+        C_gpu = cuda.mem_alloc(b * m * n * A.itemsize)
 
-            # Allocate memory on the device
-            a_gpu = cuda.mem_alloc(a_transposed.nbytes)
-            b_gpu = cuda.mem_alloc(b_transposed.nbytes)
-            c_gpu = cuda.mem_alloc(c_i.nbytes)
+        # Copy data to GPU
+        cuda.memcpy_htod(A_gpu, A_flat)
+        cuda.memcpy_htod(B_gpu, B_flat)
 
-            # Transfer data to the device
-            cuda.memcpy_htod(a_gpu, a_transposed)
-            cuda.memcpy_htod(b_gpu, b_transposed)
+        # Prepare arrays of pointers
+        A_gpu_ptrs = np.array(
+            [int(A_gpu) + i * m * k * A.itemsize for i in range(b)],
+            dtype=np.uint64)
+        B_gpu_ptrs = np.array(
+            [int(B_gpu) + i * k * n * B.itemsize for i in range(b)],
+            dtype=np.uint64)
+        C_gpu_ptrs = np.array(
+            [int(C_gpu) + i * m * n * A.itemsize for i in range(b)],
+            dtype=np.uint64)
 
-            # Perform matrix multiplication
-            lib_mm.matmul_cublas(int(a_gpu), int(b_gpu), int(c_gpu), m, n, k)
+        # Allocate device memory for arrays of pointers
+        A_array_gpu = cuda.mem_alloc(A_gpu_ptrs.nbytes)
+        B_array_gpu = cuda.mem_alloc(B_gpu_ptrs.nbytes)
+        C_array_gpu = cuda.mem_alloc(C_gpu_ptrs.nbytes)
 
-            # Copy the result back to host and transpose it
-            cuda.memcpy_dtoh(c_i, c_gpu)
-            cs.append(c_i.tolist())
+        # Copy arrays of pointers to device memory
+        cuda.memcpy_htod(A_array_gpu, A_gpu_ptrs)
+        cuda.memcpy_htod(B_array_gpu, B_gpu_ptrs)
+        cuda.memcpy_htod(C_array_gpu, C_gpu_ptrs)
+
+        # Set argument types for the kernel function
+        lib_mm.batchedMatMulKernel.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int]
+
+        # Launch kernel
+        lib_mm.batchedMatMulKernel(
+            int(A_array_gpu), int(B_array_gpu), int(C_array_gpu), m, k, n, b)
+
+        # Synchronize device to ensure computation is complete
+        cuda.Context.synchronize()
+
+        # Copy back the result
+        C = np.empty((b, n, m), dtype=A.dtype)
+        cuda.memcpy_dtoh(C, C_gpu)
+        C = np.transpose(C, (0, 2, 1))
 
         c = minitorch_tensor(
-            cs, backend=a.backend, requires_grad=a.requires_grad())
+            C.tolist(), backend=a.backend, requires_grad=a.requires_grad())
 
         # Undo 3d if we added it.
         if both_2d:
