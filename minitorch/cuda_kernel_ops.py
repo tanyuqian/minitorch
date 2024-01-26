@@ -227,21 +227,21 @@ class CudaKernelOps(TensorOps):
                                     b.shape[-1])
         assert a.shape[0] == b.shape[0]
 
-        b, m, n, k = a.shape[0], a.shape[1], b.shape[1], a.shape[2]
-        A, B = a, b
+        bs, m, n, k = a.shape[0], a.shape[1], b.shape[1], a.shape[2]
+        A, B = a.to_numpy(), b.to_numpy()
 
         # Convert A and B to column-major order
         A_fortran = np.transpose(A, (0, 2, 1))
         B_fortran = np.transpose(B, (0, 2, 1))
 
         # Flatten A and B for sending to GPU
-        A_flat = A_fortran.reshape(b, -1)
-        B_flat = B_fortran.reshape(b, -1)
+        A_flat = A_fortran.reshape(bs, -1)
+        B_flat = B_fortran.reshape(bs, -1)
 
         # Allocate memory on GPU
         A_gpu = cuda.mem_alloc(A_flat.nbytes)
         B_gpu = cuda.mem_alloc(B_flat.nbytes)
-        C_gpu = cuda.mem_alloc(b * m * n * A.itemsize)
+        C_gpu = cuda.mem_alloc(bs * m * n * A.itemsize)
 
         # Copy data to GPU
         cuda.memcpy_htod(A_gpu, A_flat)
@@ -249,13 +249,13 @@ class CudaKernelOps(TensorOps):
 
         # Prepare arrays of pointers
         A_gpu_ptrs = np.array(
-            [int(A_gpu) + i * m * k * A.itemsize for i in range(b)],
+            [int(A_gpu) + i * m * k * A.itemsize for i in range(bs)],
             dtype=np.uint64)
         B_gpu_ptrs = np.array(
-            [int(B_gpu) + i * k * n * B.itemsize for i in range(b)],
+            [int(B_gpu) + i * k * n * B.itemsize for i in range(bs)],
             dtype=np.uint64)
         C_gpu_ptrs = np.array(
-            [int(C_gpu) + i * m * n * A.itemsize for i in range(b)],
+            [int(C_gpu) + i * m * n * A.itemsize for i in range(bs)],
             dtype=np.uint64)
 
         # Allocate device memory for arrays of pointers
@@ -280,13 +280,13 @@ class CudaKernelOps(TensorOps):
 
         # Launch kernel
         lib_mm.batchedMatMulKernel(
-            int(A_array_gpu), int(B_array_gpu), int(C_array_gpu), m, k, n, b)
+            int(A_array_gpu), int(B_array_gpu), int(C_array_gpu), m, k, n, bs)
 
         # Synchronize device to ensure computation is complete
         cuda.Context.synchronize()
 
         # Copy back the result
-        C = np.empty((b, n, m), dtype=A.dtype)
+        C = np.empty((bs, n, m), dtype=A.dtype)
         cuda.memcpy_dtoh(C, C_gpu)
         C = np.transpose(C, (0, 2, 1))
 
