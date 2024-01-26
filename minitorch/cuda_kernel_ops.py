@@ -18,6 +18,7 @@ from .tensor_functions import tensor as minitorch_tensor
 
 import ctypes
 import numpy as np
+import pycuda.autoinit
 import pycuda.driver as cuda
 
 # Load the shared library
@@ -217,27 +218,14 @@ class CudaKernelOps(TensorOps):
         ls.append(a.shape[-2])
         ls.append(b.shape[-1])
         assert a.shape[-1] == b.shape[-2]
-        out = a.zeros(tuple(ls))
 
-        # handle cases with more dimensions [64, 4, 32, 128] x [64, 4, 128, 32]
-        more_3d = False
-        if len(out.shape) > 3:
-            # print(f"Debug in matmul: output shape {ls}")
-            more_3d = True
-            out = out.view(np.prod(out.shape[:-2]), out.shape[-2],
-                           out.shape[-1])
-            nshape = out._tensor._shape
-            nstrides = out._tensor._strides
-            # print(f"Debug in matmul: batched dim [:-2] and get the strides {nshape, nstrides}")
         if len(a.shape) > 3:
             a = a.contiguous().view(np.prod(a.shape[:-2]), a.shape[-2],
                                     a.shape[-1])
         if len(b.shape) > 3:
             b = b.contiguous().view(np.prod(b.shape[:-2]), b.shape[-2],
                                     b.shape[-1])
-
         assert a.shape[0] == b.shape[0]
-        assert a.shape[0] == out.shape[0]
 
         # Define the argument types for the CUDA kernel
         lib_mm.matmul_cublas.argtypes = [
@@ -282,11 +270,10 @@ class CudaKernelOps(TensorOps):
 
         # Undo 3d if we added it.
         if both_2d:
-            out = out.view(out.shape[1], out.shape[2])
-        if more_3d:
-            out = out.view(*ls)
-            # print(f"Debug in matmul: output shape {out.shape}")
-        return out
+            c = c.view(c.shape[1], c.shape[2])
+        if len(ls) > 3:
+            c = c.view(*ls)
+        return c
 
     @staticmethod
     def matrix_multiply_juanyun(a: Tensor, b: Tensor) -> Tensor:
