@@ -227,7 +227,7 @@ class CudaKernelOps(TensorOps):
                                     b.shape[-1])
         assert a.shape[0] == b.shape[0]
 
-        bs, m, n, k = a.shape[0], a.shape[1], b.shape[1], a.shape[2]
+        bs, m, n, k = a.shape[0], a.shape[1], b.shape[2], a.shape[2]
         A, B = a.to_numpy(), b.to_numpy()
 
         # Convert A and B to column-major order
@@ -289,6 +289,8 @@ class CudaKernelOps(TensorOps):
         C = np.empty((bs, n, m), dtype=A.dtype)
         cuda.memcpy_dtoh(C, C_gpu)
         C = np.transpose(C, (0, 2, 1))
+
+        assert np.allclose(np.matmul(A[-1], B[-1]), C[-1])
 
         c = minitorch_tensor(
             C.tolist(), backend=a.backend, requires_grad=a.requires_grad())
