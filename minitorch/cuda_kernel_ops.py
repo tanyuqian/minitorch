@@ -14,7 +14,7 @@ from .tensor_data import (
     to_index,
 )
 from .tensor_ops import MapProto, TensorOps
-from .tensor_functions import tensor as minitorch_tensor
+from .tensor_functions import tensor_from_numpy
 
 import ctypes
 import numpy as np
@@ -292,8 +292,8 @@ class CudaKernelOps(TensorOps):
 
         assert np.allclose(np.matmul(A[-1], B[-1]), C[-1])
 
-        c = minitorch_tensor(
-            C.tolist(), backend=a.backend, requires_grad=a.requires_grad())
+        c = tensor_from_numpy(
+            C, backend=a.backend, requires_grad=a.requires_grad())
 
         # Undo 3d if we added it.
         if both_2d:
