@@ -14,16 +14,15 @@ from .tensor_data import (
     to_index,
 )
 from .tensor_ops import MapProto, TensorOps
+from .tensor_functions import tensor as minitorch_tensor
 
 import ctypes
 import numpy as np
-import pycuda.gpuarray as gpuarray
-import pycuda.driver as drv
-from pycuda.compiler import SourceModule
-import pycuda.autoinit
+import pycuda.driver as cuda
 
 # Load the shared library
 lib = ctypes.CDLL("minitorch/cuda_kernels/combine.so")
+lib_mm = ctypes.CDLL("minitorch/cuda_kernels/matrix_multiply.so")
 datatype = np.float32
 
 # function map
@@ -205,6 +204,92 @@ class CudaKernelOps(TensorOps):
 
     @staticmethod
     def matrix_multiply(a: Tensor, b: Tensor) -> Tensor:
+        both_2d = 0
+        if len(a.shape) == 2:
+            a = a.contiguous().view(1, a.shape[0], a.shape[1])
+            both_2d += 1
+        if len(b.shape) == 2:
+            b = b.contiguous().view(1, b.shape[0], b.shape[1])
+            both_2d += 1
+        both_2d = both_2d == 2
+
+        ls = list(shape_broadcast(a.shape[:-2], b.shape[:-2]))
+        ls.append(a.shape[-2])
+        ls.append(b.shape[-1])
+        assert a.shape[-1] == b.shape[-2]
+        out = a.zeros(tuple(ls))
+
+        # handle cases with more dimensions [64, 4, 32, 128] x [64, 4, 128, 32]
+        more_3d = False
+        if len(out.shape) > 3:
+            # print(f"Debug in matmul: output shape {ls}")
+            more_3d = True
+            out = out.view(np.prod(out.shape[:-2]), out.shape[-2],
+                           out.shape[-1])
+            nshape = out._tensor._shape
+            nstrides = out._tensor._strides
+            # print(f"Debug in matmul: batched dim [:-2] and get the strides {nshape, nstrides}")
+        if len(a.shape) > 3:
+            a = a.contiguous().view(np.prod(a.shape[:-2]), a.shape[-2],
+                                    a.shape[-1])
+        if len(b.shape) > 3:
+            b = b.contiguous().view(np.prod(b.shape[:-2]), b.shape[-2],
+                                    b.shape[-1])
+
+        assert a.shape[0] == b.shape[0]
+        assert a.shape[0] == out.shape[0]
+
+        # Define the argument types for the CUDA kernel
+        lib_mm.matmul_cublas.argtypes = [
+            ctypes.c_void_p,  # Pointer to matrix A on the device
+            ctypes.c_void_p,  # Pointer to matrix B on the device
+            ctypes.c_void_p,  # Pointer to matrix C on the device
+            ctypes.c_int,  # Matrix A rows (m)
+            ctypes.c_int,  # Matrix B columns (n)
+            ctypes.c_int  # Shared dimension (k)
+        ]
+        lib_mm.matmul_cublas.restype = None
+
+        a_np, b_np = a.to_numpy(), b.to_numpy()
+
+        cs = []
+        m, n, k = a.shape[-2], b.shape[-1], a.shape[-1]
+        for i in range(a.shape[0]):
+            c_i = np.zeros((m, n), dtype=a_np[i].dtype)
+
+            # Transpose matrices a and b for column-major order
+            a_transposed = np.asfortranarray(a_np[i])
+            b_transposed = np.asfortranarray(b_np[i])
+
+            # Allocate memory on the device
+            a_gpu = cuda.mem_alloc(a_transposed.nbytes)
+            b_gpu = cuda.mem_alloc(b_transposed.nbytes)
+            c_gpu = cuda.mem_alloc(c_i.nbytes)
+
+            # Transfer data to the device
+            cuda.memcpy_htod(a_gpu, a_transposed)
+            cuda.memcpy_htod(b_gpu, b_transposed)
+
+            # Perform matrix multiplication
+            lib_mm.matmul_cublas(int(a_gpu), int(b_gpu), int(c_gpu), m, n, k)
+
+            # Copy the result back to host and transpose it
+            cuda.memcpy_dtoh(c_i, c_gpu)
+            cs.append(c_i.tolist())
+
+        c = minitorch_tensor(
+            cs, backend=a.backend, requires_grad=a.requires_grad())
+
+        # Undo 3d if we added it.
+        if both_2d:
+            out = out.view(out.shape[1], out.shape[2])
+        if more_3d:
+            out = out.view(*ls)
+            # print(f"Debug in matmul: output shape {out.shape}")
+        return out
+
+    @staticmethod
+    def matrix_multiply_juanyun(a: Tensor, b: Tensor) -> Tensor:
         both_2d = 0
         if len(a.shape) == 2:
             a = a.contiguous().view(1, a.shape[0], a.shape[1])
