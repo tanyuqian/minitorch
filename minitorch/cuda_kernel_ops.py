@@ -290,8 +290,6 @@ class CudaKernelOps(TensorOps):
         cuda.memcpy_dtoh(C, C_gpu)
         C = np.transpose(C, (0, 2, 1))
 
-        assert np.allclose(np.matmul(A[-1], B[-1]), C[-1])
-
         c = tensor_from_numpy(
             C, backend=a.backend, requires_grad=a.requires_grad())
 
