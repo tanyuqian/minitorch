@@ -3,6 +3,7 @@ from typing import Sequence
 from .module import Parameter
 from .scalar import Scalar
 
+import math
 import numpy as np
 
 
