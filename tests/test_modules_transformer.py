@@ -114,10 +114,6 @@ def test_feedforward_layer(batch_size, seq_len, n_embd, dropout, backend):
 @pytest.mark.parametrize("seq_len",   [128])
 @pytest.mark.parametrize("n_embd",    [32, 64])
 @pytest.mark.parametrize("num_heads", [4])
-# @pytest.mark.parametrize("batch_size", [16])
-# @pytest.mark.parametrize("seq_len",   [32])
-# @pytest.mark.parametrize("n_embd",    [64])
-# @pytest.mark.parametrize("num_heads", [4])
 @pytest.mark.parametrize("causal",    [True])
 @pytest.mark.parametrize("p_dropout", [0.0])
 @pytest.mark.parametrize("ln_eps", [1e-5])
@@ -126,6 +122,7 @@ def test_feedforward_layer(batch_size, seq_len, n_embd, dropout, backend):
 def test_transformer_layer(batch_size, seq_len, n_embd, num_heads, causal, p_dropout, ln_eps, bias, backend):
     """
     batch_size = 1, seq_len = 128, n_embd = 256, num_heads = 4, causal = True, p_dropout = 0.0, ln_eps = 1e-05, bias = False, backend = <minitorch.tensor_ops.TensorBackend object at 0x7f8d6f3d9000>
+    batch_size = 16, seq_len = 32, n_embd = 64, num_heads = 4, causal = True, p_dropout = 0.0, ln_eps = 1e-05, bias = False, backend = <minitorch.tensor_ops.TensorBackend object at 0x7f8d6f3d9000>
     """
     np.random.seed(10)
     torch.manual_seed(10)
