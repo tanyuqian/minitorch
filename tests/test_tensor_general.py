@@ -272,3 +272,100 @@ def test_bmm(dims, backend):
         atol=1e-5, 
         rtol=1e-5
     )
+
+### Problem 0
+
+@pytest.mark.a2_0
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("exp", [0, 1, 2, 3])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_pow_1(sizes, exp, backend):
+    data = np.random.randn(*sizes)
+    
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = x ** exp
+    result_ = x_ ** exp
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+
+@pytest.mark.a2_0
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("exp", [0.5])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_pow_2(sizes, exp, backend):
+    data = np.random.uniform(0, 1, size=sizes)
+    
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = x ** exp
+    result_ = x_ ** exp
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+
+@pytest.mark.a2_0
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("exp", [0.5])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_tanh(sizes, exp, backend):
+    data = np.random.randn(*sizes)
+    
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = x.tanh()
+    result_ = torch.tanh(x_)
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
