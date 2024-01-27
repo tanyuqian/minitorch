@@ -75,7 +75,7 @@ class Adam(Optimizer):
                     step_size = self.lr * math.sqrt(
                         bias_correction2) / bias_correction1
 
-                    p.update(p.value - step_size * exp_avg / denom)
+                    p.update(p.value - step_size * state['exp_avg'] / denom)
 
 
 # class Adam(Optimizer):
