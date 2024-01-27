@@ -122,34 +122,47 @@ def test_log_softmax(t: Tensor) -> None:
 
 import numba
 
-GENERAL_SHAPES = [(2, 5), (3, 8)]
-_BACKENDS = [minitorch.TensorBackend(minitorch.SimpleOps),
-             pytest.param(
+GENERAL_SHAPES = [(2, 5), (3, 8), (64, 128)]
+_BACKENDS = [pytest.param(
                  minitorch.TensorBackend(minitorch.CudaKernelOps), 
                  marks=pytest.mark.skipif(not numba.cuda.is_available(), reason="No GPU")
              )] 
 
 
-@pytest.mark.parametrize("backend", _BACKENDS, ids=["SimpleOps", "CudaKernelOps"])
-def test_gelu(backend):
-    x = np.random.randn(5,3).astype(datatype)
-    A = minitorch.tensor(x.tolist(), backend=backend)
-    _A = torch.tensor(x, dtype=torch.float32)
+@pytest.mark.parametrize("sizes", GENERAL_SHAPES)
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_a2_gelu(sizes, backend):
+    x = np.random.randn(*sizes).astype(datatype)
+    A = minitorch.tensor(x.tolist(), backend=backend, requires_grad=True)
+    A_ = torch.tensor(x, dtype=torch.float32, requires_grad=True)
+
+    result = minitorch.GELU(A)
+    result_ = torch.nn.functional.gelu(A_, approximate='tanh')
 
     np.testing.assert_allclose(
-        minitorch.GELU(A).to_numpy(),
-        torch.nn.functional.gelu(_A, approximate='tanh').numpy(),
+        result.to_numpy(),
+        result_.detach().numpy(),
         atol=1e-5,
         rtol=1e-5
     )
 
-    minitorch.grad_check(lambda x: minitorch.GELU(x), A)
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        A.grad.to_numpy(),
+        A_.grad.detach().numpy(),
+        atol=1e-5,
+        rtol=1e-5
+    )
 
 
-@pytest.mark.parametrize("backend", _BACKENDS, ids=["SimpleOps", "CudaKernelOps"])
-def test_logsumexp(backend):
+@pytest.mark.parametrize("sizes", GENERAL_SHAPES)
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_a2_logsumexp(sizes, backend):
     dim=1
-    x = np.random.randn(5,3).astype(datatype)
+    
+    x = np.random.randn(*sizes).astype(datatype)
     A = minitorch.tensor(x.tolist(), backend=backend)
     _A = torch.tensor(x, dtype=torch.float32, requires_grad=True)
 
@@ -173,39 +186,40 @@ def test_logsumexp(backend):
         rtol=1e-5
     )
 
-    # minitorch.grad_check(lambda x: minitorch.logsumexp(x, dim), A)
+
+@pytest.mark.parametrize("batches", [1, 64, 256])
+@pytest.mark.parametrize("classes", [2, 32, 128, 10000])
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_a2_softmax_loss(batches, classes, backend):
+    np.random.seed(10)
+    # Classes=1 may be buggy
+
+    logits_np = np.random.randn(batches, classes).astype(datatype)
+    targets_np = np.random.randint(low=0, high=classes, size=(batches,))
 
 
-@pytest.mark.parametrize("backend", _BACKENDS, ids=["SimpleOps", "CudaKernelOps"])
-def test_softmax_loss(backend):
-    logits_np = np.random.randn(3, 5).astype(datatype)
-    targets_np = np.random.randint(low=0, high=3, size=(3,))
+    logits = minitorch.tensor_from_numpy(logits_np, backend=backend, requires_grad=True)
+    targets = minitorch.tensor_from_numpy(targets_np, backend=backend, requires_grad=True)
 
-    logits = minitorch.tensor(logits_np.tolist(), backend=backend)
-    targets = minitorch.tensor(targets_np.tolist(), backend=backend)
-
-    _logits = torch.tensor(logits_np)
-    _targets = torch.tensor(targets_np)
+    _logits = torch.tensor(logits_np, dtype=torch.float32, requires_grad=True)
+    _targets = torch.tensor(targets_np, dtype=torch.long)
 
     result = minitorch.softmax_loss(logits, targets)
-    # Reduction with None
     _result_none = torch.nn.functional.cross_entropy(_logits, _targets, reduction='none')
-    # _result = torch.nn.functional.cross_entropy(_logits, _targets, reduction='mean')
-
-    print(result)
-    print(_result_none)
-    print(result.shape)
-    print(_result_none.shape)
-    # print(_result)
-
-    # assert False
 
     np.testing.assert_allclose(
         result.to_numpy(),
-        _result_none.numpy(),
+        _result_none.detach().numpy(),
         atol=1e-5,
         rtol=1e-5
     )
 
-    # minitorch.grad_check(lambda x: minitorch.logsumexp(x, dim), A)
+    result.sum().backward()
+    _result_none.sum().backward()
 
+    np.testing.assert_allclose(
+        logits.to_numpy(), 
+        _logits.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )

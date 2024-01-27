@@ -35,11 +35,12 @@ class MultiHeadAttention(Module):
         self.out_projection = Linear(in_size=n_embd, out_size=n_embd, bias=bias, backend=backend)
         self.dropout   = Dropout(p_dropout=p_dropout)
 
-    def create_causal_mask(self, seq_len):
+    def create_causal_mask(self, bs, nh, seq_len):
         """
         return a 1x1xTxt triangular causal mask for Q @ K^T (which will get broadcasted to BxHxTxT)
         """
-        mask = -np.finfo(datatype).max * np.triu(np.ones((1, 1, seq_len, seq_len), dtype=datatype), 1)
+        mask = -np.finfo(datatype).max * np.triu(np.ones((1, 1, seq_len, seq_len), dtype=datatype), 1) # This should be ok, but may be problematic
+        # mask = -np.finfo(datatype).max * np.triu(np.ones((bs, nh, seq_len, seq_len), dtype=datatype), 1) 
         return tensor_from_numpy(mask, backend=self.backend)
 
     def q_kT_v(self, x):
@@ -59,7 +60,7 @@ class MultiHeadAttention(Module):
         q = self.q_projection(x) 
         k = self.k_projection(x)
         v = self.v_projection(x)
-        # Form MultiHead: (B, T, D = nH*hD) -> (B, T, nH, hD) -> (B, H, T, D) / (B, H, D, T)
+        # From MultiHead: (B, T, D = nH*hD) -> (B, T, nH, hD) -> (B, H, T, D) / (B, H, D, T)
         q = q.view(batch_size, seq_len, self.n_head, self.attn_hidden_dim).permute(0,2,1,3)
         kT = k.view(batch_size, seq_len, self.n_head, self.attn_hidden_dim).permute(0,2,3,1)
         v = v.view(batch_size, seq_len, self.n_head, self.attn_hidden_dim).permute(0,2,1,3)
@@ -75,14 +76,13 @@ class MultiHeadAttention(Module):
         probs  = None
         
         ### BEGIN YOUR SOLUTION
-        # Implicitly using Batch Mat Mul, which is seems to be implemented in minitorch
-        q_k_t  = (q @ kT) / np.sqrt(q_dim) 
+        q_k_t  = ((q @ kT) / np.sqrt(q_dim))
         if self.causal:
-            q_k_t += self.create_causal_mask(queries_len)
+            q_k_t += self.create_causal_mask(batch_size, num_head, queries_len)
         attn   = softmax(q_k_t, dim=3)
         probs  = self.dropout(attn)
-        result = probs @ v # (B, H, T, d) bmm
-        result = result.contiguous().permute(0, 2, 1, 3).contiguous().view(batch_size, queries_len, num_head * q_dim)
+        result = probs @ v
+        result = result.permute(0, 2, 1, 3).contiguous().view(batch_size, queries_len, num_head * q_dim)
         ### END YOUR SOLUTION
 
         return result, probs
@@ -92,9 +92,13 @@ class MultiHeadAttention(Module):
         q, kT, v = self.q_kT_v(x)
         attn, _ = self.self_attention(q, kT, v)
         attn = attn.contiguous().view(batch_size * seq_len, n_embd)
-        result = self.out_projection(attn)        
-        result = result.contiguous().view(batch_size, seq_len, n_embd)
+        result = self.out_projection(attn)
+        result = result.view(batch_size, seq_len, n_embd)
         return result
+    
+    def load_weights(**kwargs):
+        # TODO: Load each weight
+        raise NotImplementedError
 
 
 class FeedForward(Module):
@@ -122,7 +126,7 @@ class FeedForward(Module):
         ### BEGIN SOLUTION
         batch_size, seq_len, n_embd = x.shape
         x = GELU(self.linear_in(x.view(batch_size * seq_len, n_embd)))
-        # Relu will be faster
+        # x = (self.linear_in(x.view(batch_size * seq_len, n_embd))).relu()
         x = self.dropout(self.linear_out(x)).view(batch_size, seq_len, n_embd)
         ### END SOLUTION
 
@@ -133,7 +137,7 @@ class TransformerLayer(Module):
         super().__init__()
         self.ln_1 = LayerNorm1d(dim=n_embd, eps=ln_eps, backend=backend)
         self.ln_2 = LayerNorm1d(dim=n_embd, eps=ln_eps, backend=backend)
-        self.attention = MultiHeadAttention(n_embd=n_embd, n_head=n_head, p_dropout=p_dropout, backend=backend)
+        self.attention = MultiHeadAttention(n_embd=n_embd, n_head=n_head, p_dropout=p_dropout, bias=bias, backend=backend)
         self.ff   = FeedForward(n_embd=n_embd, middle_dim=256, p_dropout=p_dropout, bias=bias, backend=backend)
 
     def forward(self, x):
@@ -145,8 +149,8 @@ class TransformerLayer(Module):
         batch_size, seq_len, x_dim = x.shape
         
         ### BEGIN SOLUTION
-        x = x + self.attention(self.ln_1(x.view(batch_size * seq_len, x_dim)).view(batch_size, seq_len, x_dim)) 
-        x = x + self.ff(self.ln_2(x.view(batch_size * seq_len, x_dim)).view(batch_size, seq_len, x_dim))
+        x = x + self.attention(self.ln_1(x.view(batch_size * seq_len, x_dim).contiguous()).view(batch_size, seq_len, x_dim)) 
+        x = x + self.ff(self.ln_2(x.view(batch_size * seq_len, x_dim)).contiguous().view(batch_size, seq_len, x_dim))
         ### END SOLUTION
 
         return x
@@ -159,7 +163,6 @@ class DecoderLM(Module):
         n_embd: int,
         n_head: int,
         n_positions: int,
-        n_layer: int,
         p_dropout: float=0.1,
         ln_eps: float=1e-5, 
         bias: bool=True,
@@ -172,10 +175,10 @@ class DecoderLM(Module):
 
         self.token_embeddings    = Embedding(num_embeddings=n_vocab, embedding_dim=n_embd, backend=backend)
         self.position_embeddings = Embedding(num_embeddings=n_positions, embedding_dim=n_embd, backend=backend)
-        self.t_layer_1  = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
-        self.t_layer_2  = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
-        self.t_layer_3  = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
-        self.t_layer_4  = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
+        self.t_layer_1           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
+        self.t_layer_2           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
+        self.t_layer_3           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
+        self.t_layer_4           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
         self.dropout             = Dropout(p_dropout)
         self.ln                  = LayerNorm1d(dim=n_embd, eps=ln_eps, backend=backend)
         self.lm_head             = Linear(in_size=n_embd, out_size=n_vocab, bias=False, backend=backend)
@@ -190,7 +193,6 @@ class DecoderLM(Module):
         """
         
         batch_size, seq_len = idx.shape
-        # Cannot initialize with numpy, need to implicitly broadcast
         pos = tensor([i for i in range(seq_len)], backend=self.backend).view(1, seq_len)
 
         ### BEGIN SOLUTION
@@ -198,7 +200,6 @@ class DecoderLM(Module):
         tok_emb = self.token_embeddings(idx)
         # (1, seq_len, n_embd)
         pos_emb = self.position_embeddings(pos)
-        # # Input
         x = tok_emb + pos_emb # Broadcasting
         ### MINITORCH LAYERS
         x = self.t_layer_1(x)
@@ -211,4 +212,3 @@ class DecoderLM(Module):
         ### END SOLUTION
 
         return x
-

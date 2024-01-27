@@ -218,10 +218,16 @@ def logsumexp(input: Tensor, dim: int) -> Tensor:
 
     return out
 
+def one_hot(input: Tensor, num_classes: int) -> Tensor:
+    # Constructs np.eye(num_embeddings)[x] -> for each elem of x is a one hot
+    return tensor_from_numpy(
+            np.eye(num_classes)[input.to_numpy().astype(int)], 
+            backend=input.backend
+        )
 
 def softmax_loss(logits: Tensor, target: Tensor) -> Tensor:
-    """
-    Softmax + Cross Entropy Loss
+    """Softmax + Cross Entropy Loss
+    Implement this 
 
     Args: 
         logits : (minibatch, C) Tensor of logits
@@ -231,19 +237,7 @@ def softmax_loss(logits: Tensor, target: Tensor) -> Tensor:
         loss : (minibatch, )
     """
     batch_size, classes = logits.shape
-
-    def one_hot(x):
-        # Constructs np.eye(num_embeddings)[x] -> for each elem of x is a one hot
-        # return tensor(
-        #     np.eye(logits.shape[1])[x.to_numpy().astype(int)].tolist(), 
-        #     backend=logits.backend
-        # )
-        return tensor_from_numpy(
-            np.eye(logits.shape[1])[x.to_numpy().astype(int)], 
-            backend=logits.backend
-        )
-
-    target_one_hot = one_hot(target)
+    target_one_hot = one_hot(target, classes)
     result = logsumexp(logits, dim=1) - (logits * target_one_hot).sum(1) # sum is to reduce
     # Flatten to be the same as torch.cross_entropy with reduction=None
     return result.view(batch_size, )

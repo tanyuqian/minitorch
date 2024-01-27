@@ -497,11 +497,27 @@ def tensor_from_numpy(
     
     return res
 
+
 def zeros_tensor_from_numpy(shape, backend: TensorBackend = SimpleBackend):
     """NOTE: This should ONLY be used to initialize a tensor. 
     Any other usage could result in undefined behavior.
     """
     zs = np.zeros(shape).astype(datatype)
+    return minitorch.Tensor(
+        v = minitorch.TensorData(
+            zs.flatten(), # Will create a COPY of the numpy array
+            shape, 
+            tuple(i // datasize for i in zs.strides)
+        ),
+        backend=backend
+    )
+
+
+def ones_tensor_from_numpy(shape, backend: TensorBackend = SimpleBackend):
+    """NOTE: This should ONLY be used to initialize a tensor. 
+    Any other usage could result in undefined behavior.
+    """
+    zs = np.ones(shape).astype(datatype)
     return minitorch.Tensor(
         v = minitorch.TensorData(
             zs.flatten(), # Will create a COPY of the numpy array

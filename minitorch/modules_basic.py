@@ -8,7 +8,8 @@ Embedding
 import numpy as np
 
 from .module import Module, Parameter
-from .tensor_functions import (zeros, ones, rand, tensor, tensor_from_numpy)
+from .tensor_functions import (zeros, ones, rand, tensor, tensor_from_numpy, zeros_tensor_from_numpy, ones_tensor_from_numpy)
+from .nn import one_hot
 from .tensor_ops import TensorBackend
 from .tensor import Tensor
 
@@ -45,7 +46,7 @@ class Embedding(Module):
         """
         bs, seq_len = x.shape
         x = x.view(seq_len * bs,)
-        one_hot_x = self.one_hot(x)
+        one_hot_x = one_hot(x, self.num_embeddings)
         # (seq_len * bs, num_embed) -> (seq_len * bs, embedding_dim)
         out = one_hot_x @ self.weights.value.view(self.num_embeddings, self.embedding_dim)
         out = out.view(bs, seq_len, self.embedding_dim)
@@ -88,9 +89,10 @@ class Linear(Module):
     def forward(self, x):
         batch, in_size = x.shape
 
+        # result = x @ self.weights.value
         result = (
             x.view(batch, in_size) @ self.weights.value.view(in_size, self.out_size)
-        ).view(batch, self.out_size)        
+        ).contiguous().view(batch, self.out_size)        
         if self.bias is not None:
             result += self.bias.value
 
@@ -103,9 +105,8 @@ class LayerNorm1d(Module):
         self.dim = dim
         self.eps = eps
         ### BEGIN YOUR SOLUTION
-        self.weights = Parameter(ones((self.dim, ), backend=backend))
-        self.bias   = Parameter(zeros((self.dim, ), backend=backend))
-
+        self.weights = Parameter(ones_tensor_from_numpy((self.dim, ), backend=backend))
+        self.bias   = Parameter(zeros_tensor_from_numpy((self.dim, ), backend=backend))
         self.weights.value.requires_grad_(True)
         self.bias.value.requires_grad_(True)
         ### END YOUR SOLUTION

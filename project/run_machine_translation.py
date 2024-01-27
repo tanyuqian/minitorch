@@ -213,7 +213,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
         'n_embd'      : 128,   # n_embed
         'n_head'      : 4,    # n_head
         'n_positions' : model_max_length,  # n_ctx == n_positions
-        'n_layer'     : 4,    # n_layer
+        # 'n_layer'     : 4,    # n_layer
         'p_dropout'   : 0.1,  # x_pdrop
         'ln_eps'      : 1e-5, # layer_norm_epsilon
         'backend'     : backend
@@ -230,9 +230,9 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     src_key, tgt_key = 'de', 'en'
 
     ### MAKE SMALLER
-    dataset['train'] = dataset['train'][:20000]        # 160000
-    dataset['validation'] = dataset['validation'][:2000] # 7283
-    dataset['test'] = dataset['test'][:10]             # 6750   
+    dataset['train'] = dataset['train'][:64]        # 160000
+    dataset['validation'] = dataset['validation'][:64] # 7283
+    dataset['test'] = dataset['test'][:5]             # 6750   
     ###
 
     for k in dataset:
