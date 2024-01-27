@@ -209,7 +209,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     backend = backend=minitorch.TensorBackend(CudaKernelOps)
 
     config = {
-        'n_vocab'     : 10000,  # vocab_size
+        'n_vocab'     : 4000,  # vocab_size
         'n_embd'      : 256,   # n_embed
         'n_head'      : 4,    # n_head
         'n_positions' : model_max_length,  # n_ctx == n_positions
@@ -221,7 +221,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
 
     model = DecoderLM(**config)
     # optimizer = minitorch.SGD(model.parameters(), lr=learning_rate)
-    optimizer = minitorch.Adam(model.parameters(), lr=learning_rate)
+    # optimizer = minitorch.Adam(model.parameters(), lr=learning_rate)
 
     dataset = {
         split: datasets.load_dataset(dataset_name, split=split)['translation']
@@ -230,7 +230,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     src_key, tgt_key = 'de', 'en'
 
     ### MAKE SMALLER
-    # dataset['train'] = dataset['train'][:20000]        # 160000
+    dataset['train'] = dataset['train'][:20000]        # 160000
     dataset['validation'] = dataset['validation'][:64] # 7283
     dataset['test'] = dataset['test'][:5]             # 6750   
     ###
