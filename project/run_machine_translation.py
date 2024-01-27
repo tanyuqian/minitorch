@@ -220,7 +220,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     }
 
     model = DecoderLM(**config)
-    # optimizer = minitorch.SGD(model.parameters(), lr=learning_rate)
+    optimizer = minitorch.SGD(model.parameters(), lr=learning_rate)
     # optimizer = minitorch.Adam(model.parameters(), lr=learning_rate)
 
     dataset = {
