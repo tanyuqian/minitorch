@@ -58,6 +58,7 @@ class Adam(Optimizer):
 
                     # State initialization
                     if len(state) == 0:
+                        print(f'initializing state: tensor_shape = {p.shape}')
                         state['step'] = 0
                         state['exp_avg'] = grad.zeros()
                         state['exp_avg_sq'] = grad.zeros()
