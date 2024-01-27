@@ -291,7 +291,8 @@ class CudaKernelOps(TensorOps):
         C = np.transpose(C, (0, 2, 1))
 
         c = tensor_from_numpy(
-            C, backend=a.backend, requires_grad=a.requires_grad()).contiguous()
+            np.ascontiguousarray(c),
+            backend=a.backend, requires_grad=a.requires_grad()).contiguous()
 
         # Undo 3d if we added it.
         if both_2d:
