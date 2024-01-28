@@ -310,17 +310,53 @@ void MatrixMultiply(
 
     // Allocate device memory
     float *d_out, *d_a, *d_b;
-    cudaMalloc(&d_a, batch * m * n * sizeof(float));
-    cudaMalloc(&d_b, batch * n * p * sizeof(float));
-    cudaMalloc(&d_out, batch * m * p * sizeof(float));
+    cudaError_t status = cudaMalloc(&d_a, batch * m * n * sizeof(float));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix A Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_b, batch * n * p * sizeof(float));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix B Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_out, batch * m * p * sizeof(float));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix OUT Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
 
     int *d_out_shape, *d_out_strides, *d_a_shape, *d_a_strides, *d_b_shape, *d_b_strides;
-    cudaMalloc(&d_out_shape, 3 * sizeof(int));
-    cudaMalloc(&d_out_strides, 3 * sizeof(int));
-    cudaMalloc(&d_a_shape, 3 * sizeof(int));
-    cudaMalloc(&d_a_strides, 3 * sizeof(int));
-    cudaMalloc(&d_b_shape, 3 * sizeof(int));
-    cudaMalloc(&d_b_strides, 3 * sizeof(int));
+    status = cudaMalloc(&d_out_shape, 3 * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix out_shape Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_out_strides, 3 * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix out_strides Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_a_shape, 3 * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix a_shape Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_a_strides, 3 * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix a_strides Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_b_shape, 3 * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix b_shape Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_b_strides, 3 * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Matmul Malloc Matrix b_strides Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
 
     // Copy data to the device
     cudaMemcpy(d_a, a_storage, batch * m * n * sizeof(float), cudaMemcpyHostToDevice);
@@ -348,7 +384,6 @@ void MatrixMultiply(
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
       fprintf(stderr, "Matmul Error: %s\n", cudaGetErrorString(err));
-      // Handle the error (e.g., by exiting the program)
       exit(EXIT_FAILURE);
     }
 
@@ -410,11 +445,6 @@ void tensorMap(
       // Handle the error (e.g., by exiting the program)
       exit(EXIT_FAILURE);
     }
-
-    // for(int i = 0; i < out_size; i++) {
-    //   std::cout << out[i] << "\t";
-    // }
-    // std::cout << std::endl;
 
     // Free memory on device
     cudaFree(d_in);

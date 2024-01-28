@@ -90,18 +90,20 @@ def collate_batch(
 def loss_fn(batch, model):
     idx = batch['input_ids']
     idx.requires_grad_(True)
-
+    print("getting into loss_fn")
     logits = model(idx=idx)
-
+    print("finish prediction")
     bs, l, c = logits.shape
     logits = logits.view(bs * l, c)
     targets = batch['labels'].view(bs * l)
     label_token_weights = batch['label_token_weights'].view(bs * l)
 
     targets.requires_grad_(True)
-
+    print("start calculating loss")
+    # import pdb
+    # pdb.set_trace()
     loss = minitorch.nn.softmax_loss(
-        logits=logits.view(bs * l, c),
+        logits=logits,
         target=targets
     )
 
@@ -213,7 +215,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
         'n_embd'      : 256,   # n_embed
         'n_head'      : 4,    # n_head
         'n_positions' : model_max_length,  # n_ctx == n_positions
-        # 'n_layer'     : 4,    # n_layer
+        'n_layer'     : 4,    # n_layer
         'p_dropout'   : 0.1,  # x_pdrop
         'ln_eps'      : 1e-5, # layer_norm_epsilon
         'backend'     : backend

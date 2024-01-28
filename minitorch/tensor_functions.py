@@ -493,7 +493,7 @@ def tensor_from_numpy(
         backend=backend
     )
 
-    res.requires_grad_(True)
+    res.requires_grad_(requires_grad)
     
     return res
 

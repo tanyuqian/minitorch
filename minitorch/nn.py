@@ -238,6 +238,8 @@ def softmax_loss(logits: Tensor, target: Tensor) -> Tensor:
     """
     batch_size, classes = logits.shape
     target_one_hot = one_hot(target, classes)
+    import pdb
+    pdb.set_trace()
     result = logsumexp(logits, dim=1) - (logits * target_one_hot).sum(1) # sum is to reduce
     # Flatten to be the same as torch.cross_entropy with reduction=None
     return result.view(batch_size, )
