@@ -477,13 +477,6 @@ def tensor_from_numpy(
     if ls.dtype != datatype:
         ls = ls.astype(datatype)
 
-    # return tensor(ls.tolist(), backend, True)
-    # res =  minitorch.Tensor.make(
-    #     storage=ls.flatten(), # Will create a COPY of the numpy array
-    #     shape=ls.shape, 
-    #     strides=tuple(i // datasize for i in ls.strides),
-    #     backend=backend
-    # )
     res =  minitorch.Tensor(
         v = minitorch.TensorData(
             ls.flatten(), # Will create a COPY of the numpy array

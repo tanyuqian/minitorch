@@ -53,16 +53,6 @@ class Embedding(Module):
 
         return out
 
-class Sequential(Module):
-    def __init__(self, *modules):
-        super().__init__()
-        self.children = (modules)
-    
-    def forward(self, x):
-        for module in self.children:
-          x = module.forward(x)
-        return x
-    
     
 class Dropout(Module):
     def __init__(self, p_dropout: float):
@@ -82,8 +72,8 @@ class Dropout(Module):
 class Linear(Module):
     def __init__(self, in_size, out_size, bias, backend):
         super().__init__()
-        self.weights = Parameter(rand((in_size, out_size), backend=backend, requires_grad=True))
-        self.bias    = Parameter(rand((out_size,), backend=backend, requires_grad=True)) if bias else None
+        self.weights = Parameter(tensor_from_numpy(np.random.uniform(-(1/np.sqrt(in_size)), (1/np.sqrt(in_size)), (in_size, out_size)), backend=backend, requires_grad=True))
+        self.bias    = Parameter(tensor_from_numpy(np.random.uniform(-(1/np.sqrt(in_size)), (1/np.sqrt(in_size)), (out_size, )), backend=backend, requires_grad=True)) if bias else None
         self.out_size = out_size
 
     def forward(self, x):

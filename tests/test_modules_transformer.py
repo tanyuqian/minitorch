@@ -16,6 +16,7 @@ _BACKENDS = [pytest.param(
                  marks=pytest.mark.skipif(not numba.cuda.is_available(), reason="No GPU")
              )]
 
+@pytest.mark.a2_3
 @pytest.mark.parametrize("batch_size",  [1, 64])
 @pytest.mark.parametrize("queries_len", [2, 256])
 @pytest.mark.parametrize("n_embd",      [64, 256])
@@ -86,7 +87,7 @@ def test_multihead_attention(batch_size, queries_len, n_embd, num_heads, p_dropo
         (layer.v_projection.weights.value.grad is not None)
     )
 
-
+@pytest.mark.a2_3
 @pytest.mark.parametrize("batch_size", [1])
 @pytest.mark.parametrize("seq_len", [5])
 @pytest.mark.parametrize("n_embd",  [9])
@@ -109,7 +110,7 @@ def test_feedforward_layer(batch_size, seq_len, n_embd, dropout, backend):
 
     assert result is not None
 
-
+@pytest.mark.a2_3
 @pytest.mark.parametrize("batch_size", [2, 32])
 @pytest.mark.parametrize("seq_len",   [128])
 @pytest.mark.parametrize("n_embd",    [32, 64])
@@ -206,6 +207,7 @@ def test_transformer_layer(batch_size, seq_len, n_embd, num_heads, causal, p_dro
     # )
 
 
+@pytest.mark.a2_3
 @pytest.mark.parametrize("batch_size", [1])
 @pytest.mark.parametrize("seq_len", [5])
 @pytest.mark.parametrize("n_vocab", [10])

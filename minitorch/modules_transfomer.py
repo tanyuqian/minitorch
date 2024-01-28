@@ -3,7 +3,6 @@ from .tensor import tensor, tensor_from_numpy
 from .module import Module, Parameter
 from .modules_basic import (
     Embedding,
-    Sequential,
     Dropout,
     LayerNorm1d,
     Linear

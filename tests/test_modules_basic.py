@@ -16,6 +16,7 @@ _BACKENDS = [pytest.param(
              )]
 
 
+@pytest.mark.a2_2
 @pytest.mark.parametrize("batch_size", [1, 5])
 @pytest.mark.parametrize("num_embeddings", [3, 200])
 @pytest.mark.parametrize("seq_len", [1, 50])
@@ -58,6 +59,7 @@ def test_embedding(batch_size, num_embeddings, seq_len, embedding_dim, backend):
 def test_dropout():
     pass
 
+@pytest.mark.a2_2
 @pytest.mark.parametrize("sizes", [(64, 256, 128)])
 @pytest.mark.parametrize("bias", [False, True])
 @pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
@@ -189,7 +191,7 @@ def test_linear_double(sizes, bias, backend):
             atol=1e-5
         )
 
-
+@pytest.mark.a2_2
 @pytest.mark.parametrize("batch_size", [1, 64])
 @pytest.mark.parametrize("dim", [3, 128, 256])
 @pytest.mark.parametrize("eps", [1e-5])
