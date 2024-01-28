@@ -154,8 +154,7 @@ class CudaKernelOps(TensorOps):
 
     @staticmethod
     def reduce(
-        fn: Callable[[float, float], float], start: float = 0.0
-    ) -> Callable[[Tensor, int], Tensor]:
+        fn: Callable[[float, float], float], start: float = 0.0) -> Callable[[Tensor, int], Tensor]:
         fn_id = fn_map[fn]
 
         def ret(a: Tensor, dim: int) -> Tensor:
@@ -204,7 +203,7 @@ class CudaKernelOps(TensorOps):
         return ret
 
     @staticmethod
-    def matrix_multiply(a: Tensor, b: Tensor) -> Tensor:
+    def matrix_multiply_cublas(a: Tensor, b: Tensor) -> Tensor:
         both_2d = 0
         if len(a.shape) == 2:
             a = a.contiguous().view(1, a.shape[0], a.shape[1])
@@ -302,7 +301,7 @@ class CudaKernelOps(TensorOps):
         return c
 
     @staticmethod
-    def matrix_multiply_juanyun(a: Tensor, b: Tensor) -> Tensor:
+    def matrix_multiply(a: Tensor, b: Tensor) -> Tensor:
         both_2d = 0
         if len(a.shape) == 2:
             a = a.contiguous().view(1, a.shape[0], a.shape[1])
