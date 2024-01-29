@@ -114,10 +114,10 @@ def loss_fn(batch, model):
     return ((loss * label_token_weights).sum() / label_token_weights.sum())
 
 
-def train(model, optimizer, examples, collate_fn, batch_size, desc):
+def train(model, optimizer, examples, n_samples, collate_fn, batch_size, desc):
     model.train()
-    random.seed(10)
-    # random.shuffle(examples)
+    random.shuffle(examples)
+    examples = examples[:n_samples]
 
     for i in (prog_bar := tqdm.trange(
             0, len(examples), batch_size, desc=f'Training ({desc})')):
@@ -203,19 +203,15 @@ def evaluate_bleu(examples, gen_sents, tgt_key):
 
 
 def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
-         model_max_length=128,
+         model_max_length=50,
          n_epochs=20,
          batch_size=64,
          learning_rate=1e-4,
-         backend=None):
-    workdir = f'./workdir'
-    os.makedirs(workdir, exist_ok=True)
-
-    # backend = minitorch.TensorBackend(FastOps)
-    backend = backend=minitorch.TensorBackend(CudaKernelOps)
+         samples_per_epoch=20000):
+    backend = minitorch.TensorBackend(CudaKernelOps)
 
     config = {
-        'n_vocab'     : 4000,  # vocab_size
+        'n_vocab'     : 10000,  # vocab_size
         'n_embd'      : 256,   # n_embed
         'n_head'      : 4,    # n_head
         'n_positions' : model_max_length,  # n_ctx == n_positions
@@ -226,8 +222,11 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     }
 
     model = DecoderLM(**config)
-    optimizer = minitorch.SGD(model.parameters(), lr=learning_rate)
-    # optimizer = minitorch.Adam(model.parameters(), lr=learning_rate)
+    optimizer = minitorch.Adam(model.parameters(), lr=learning_rate)
+
+    workdir = './workdir_vocab{n_vocab}_lr{lr}'.format(
+        n_vocab=config['n_vocab'], lr=learning_rate)
+    os.makedirs(workdir, exist_ok=True)
 
     dataset = {
         split: datasets.load_dataset(dataset_name, split=split)['translation']
@@ -236,16 +235,9 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     src_key, tgt_key = 'de', 'en'
 
     ### MAKE SMALLER
-    dataset['train'] = dataset['train'][:20000]        # 160000
     dataset['validation'] = dataset['validation'][:64] # 7283
-    dataset['test'] = dataset['test'][:5]             # 6750   
+    dataset['test'] = dataset['test'][:50]             # 6750
     ###
-
-    for k in dataset:
-        print(k)
-        print(type(dataset[k]))
-        print(len(dataset[k]))
-        print(dataset[k][0])
 
     tokenizer = get_tokenizer(
         examples=dataset['train'],
@@ -269,6 +261,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
             model=model,
             optimizer=optimizer,
             examples=dataset['train'],
+            n_samples=samples_per_epoch,
             batch_size=batch_size,
             collate_fn=collate_fn,
             desc=desc)
