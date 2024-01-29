@@ -265,13 +265,13 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     for epoch_idx in range(n_epochs):
         desc = f'epoch {epoch_idx} / {n_epochs}'
 
-        # train(
-        #     model=model,
-        #     optimizer=optimizer,
-        #     examples=dataset['train'],
-        #     batch_size=batch_size,
-        #     collate_fn=collate_fn,
-        #     desc=desc)
+        train(
+            model=model,
+            optimizer=optimizer,
+            examples=dataset['train'],
+            batch_size=batch_size,
+            collate_fn=collate_fn,
+            desc=desc)
 
         validation_loss = evaluate_loss(
             model=model,
@@ -301,7 +301,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
         eval_scores = evaluate_bleu(
             examples=dataset['test'], gen_sents=gen_sents, tgt_key=tgt_key)
         print(f'Epoch {epoch_idx}: {eval_scores}')
-        print({'validation_loss': validation_loss, **eval_scores})
+
         json.dump(
             {'validation_loss': float(validation_loss), **eval_scores},
             open(f'{workdir}/eval_results_epoch{epoch_idx}.json', 'w'))
