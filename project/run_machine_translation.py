@@ -140,8 +140,9 @@ def train(model, optimizer, examples, n_samples, collate_fn, batch_size, desc):
 
         batch_time = time.time() - t0
         prog_bar.set_postfix(
-            tokens_per_sec=np.prod(batch['input_ids'].shape) / batch_time,
-            loss=loss.item())
+            # tokens_per_sec=np.prod(batch['input_ids'].shape) / batch_time,
+            loss=loss.item(),
+            lr=optimizer.lr)
 
 
 def evaluate_loss(model, examples, batch_size, collate_fn, desc):
@@ -205,7 +206,7 @@ def evaluate_bleu(examples, gen_sents, tgt_key):
 def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
          model_max_length=50,
          n_epochs=20,
-         batch_size=64,
+         batch_size=128,
          learning_rate=1e-3,
          samples_per_epoch=20000,
          n_vocab=10000,
@@ -236,8 +237,8 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     src_key, tgt_key = 'de', 'en'
 
     ### MAKE SMALLER
-    dataset['validation'] = dataset['validation'][:64] # 7283
-    dataset['test'] = dataset['test'][:50]             # 6750
+    dataset['validation'] = dataset['validation'][:1000] # 7283
+    dataset['test'] = dataset['test'][:100]             # 6750
     ###
 
     tokenizer = get_tokenizer(
