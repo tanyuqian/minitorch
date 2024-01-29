@@ -61,24 +61,21 @@ class CudaKernelOps(TensorOps):
                 out = a.zeros(a.shape)
 
             lib.tensorMap.argtypes = [
-                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),  # out_storage
+                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),    # out_storage
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # out_shape
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # out_strides
                 ctypes.c_int,                                                            # out_size
-                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),  # in_storage
+                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),    # in_storage
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # in_shape
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # in_strides
+                ctypes.c_int,                                                            # in_size
                 ctypes.c_int,                                                            # shape_len
                 ctypes.c_int,                                                            # fn_id
             ]
 
             lib.tensorMap.restype = None
-            assert isinstance(out._tensor._storage, np.ndarray)
-            assert isinstance(out._tensor._shape, np.ndarray)
-            assert isinstance(out._tensor._strides, np.ndarray)
-            assert isinstance(a._tensor._storage, np.ndarray)
-            assert isinstance(a._tensor._shape, np.ndarray)
-            assert isinstance(a._tensor._strides, np.ndarray)
+            
+            # assert out.size == a.size, f"zip {out.size}, {a.size}"
 
             lib.tensorMap(
                 out._tensor._storage,
@@ -88,6 +85,7 @@ class CudaKernelOps(TensorOps):
                 a._tensor._storage,
                 a._tensor._shape.astype(np.int32),
                 a._tensor._strides.astype(np.int32),
+                a.size,
                 len(a.shape),
                 fn_id
             )
@@ -104,33 +102,28 @@ class CudaKernelOps(TensorOps):
             out = a.zeros(c_shape)
 
             lib.tensorZip.argtypes = [
-                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),  # out_storage
+                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),   # out_storage
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # out_shape
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # out_strides
                 ctypes.c_int,                                                            # out_size
                 ctypes.c_int,                                                            # out_shape_size
-                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),  # a_storage
+                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),   # a_storage
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # a_shape
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # a_strides
+                ctypes.c_int,                                                            # a_size
                 ctypes.c_int,                                                            # a_shape_size
-                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),  # b_storage
+                np.ctypeslib.ndpointer(dtype=datatype, ndim=1, flags='C_CONTIGUOUS'),    # b_storage
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # b_shape
                 np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),    # b_strides
+                ctypes.c_int,                                                            # b_size
                 ctypes.c_int,                                                            # b_shape_size
                 ctypes.c_int,                                                            # fn_id
             ]
 
             lib.tensorZip.restype = None
 
-            assert isinstance(out._tensor._storage, np.ndarray)
-            assert isinstance(out._tensor._shape, np.ndarray)
-            assert isinstance(out._tensor._strides, np.ndarray)
-            assert isinstance(a._tensor._storage, np.ndarray)
-            assert isinstance(a._tensor._shape, np.ndarray)
-            assert isinstance(a._tensor._strides, np.ndarray)
-            assert isinstance(b._tensor._storage, np.ndarray)
-            assert isinstance(b._tensor._shape, np.ndarray)
-            assert isinstance(b._tensor._strides, np.ndarray)
+            # assert out.size == a.size, f"zip {out.size}, {a.size}"
+            # assert out.size == b.size, f"zip {out.size}, {b.size}"
 
             lib.tensorZip(
                 out._tensor._storage,
@@ -141,10 +134,12 @@ class CudaKernelOps(TensorOps):
                 a._tensor._storage,
                 a._tensor._shape.astype(np.int32),
                 a._tensor._strides.astype(np.int32),
+                a.size,
                 len(a.shape),
                 b._tensor._storage,
                 b._tensor._shape.astype(np.int32),
                 b._tensor._strides.astype(np.int32),
+                b.size,
                 len(b.shape),
                 fn_id
             )
@@ -177,12 +172,6 @@ class CudaKernelOps(TensorOps):
             ]
 
             lib.tensorReduce.restype = None
-            assert isinstance(out._tensor._storage, np.ndarray)
-            assert isinstance(out._tensor._shape, np.ndarray)
-            assert isinstance(out._tensor._strides, np.ndarray)
-            assert isinstance(a._tensor._storage, np.ndarray)
-            assert isinstance(a._tensor._shape, np.ndarray)
-            assert isinstance(a._tensor._strides, np.ndarray)
 
             lib.tensorReduce(
                 out._tensor._storage,
@@ -351,15 +340,6 @@ class CudaKernelOps(TensorOps):
 
         lib.MatrixMultiply.restype = None
 
-        assert isinstance(out._tensor._storage, np.ndarray)
-        assert isinstance(out._tensor._shape, np.ndarray)
-        assert isinstance(out._tensor._strides, np.ndarray)
-        assert isinstance(a._tensor._storage, np.ndarray)
-        assert isinstance(a._tensor._shape, np.ndarray)
-        assert isinstance(a._tensor._strides, np.ndarray)
-        assert isinstance(b._tensor._storage, np.ndarray)
-        assert isinstance(b._tensor._shape, np.ndarray)
-        assert isinstance(b._tensor._strides, np.ndarray)
         assert len(out._tensor._shape) == 3, f"{len(out._tensor._shape)}"
         assert len(out._tensor._strides) == 3, f"{len(out._tensor._strides)}"
         assert len(a._tensor._shape) == 3

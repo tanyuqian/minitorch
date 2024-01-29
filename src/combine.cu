@@ -407,21 +407,46 @@ void tensorMap(
     float* in_storage, 
     int* in_shape, 
     int* in_strides,
+    int in_size,
     int shape_size,
     int fn_id
 ) {
 
     float *d_out, *d_in;
-    cudaMalloc(&d_out, out_size * sizeof(float));
-    cudaMalloc(&d_in, out_size * sizeof(float));
+    cudaError_t status = cudaMalloc(&d_out, out_size * sizeof(float));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Map Malloc Matrix out Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_in, in_size * sizeof(float));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Map Malloc Matrix in Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
 
     int *d_out_shape, *d_out_strides, *d_in_shape, *d_in_strides;
-    cudaMalloc(&d_out_shape, shape_size * sizeof(int));
-    cudaMalloc(&d_out_strides, shape_size * sizeof(int));
-    cudaMalloc(&d_in_shape, shape_size * sizeof(int));
-    cudaMalloc(&d_in_strides, shape_size * sizeof(int));
+    status = cudaMalloc(&d_out_shape, shape_size * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Map Malloc out_shape Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_out_strides, shape_size * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Map Malloc out_strides Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_in_shape, shape_size * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Map Malloc in_shape Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
+    status = cudaMalloc(&d_in_strides, shape_size * sizeof(int));
+    if (status != cudaSuccess) {
+      fprintf(stderr, "Map Malloc in_strides Error: %s\n", cudaGetErrorString(status));
+      exit(EXIT_FAILURE);
+    }
 
-    cudaMemcpy(d_in, in_storage, out_size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_in, in_storage, in_size * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_out_shape, out_shape, shape_size * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_out_strides, out_strides, shape_size * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_in_shape, in_shape, shape_size * sizeof(int), cudaMemcpyHostToDevice);
@@ -465,31 +490,33 @@ void tensorZip(
     float* a_storage, 
     int* a_shape, 
     int* a_strides,
+    int a_size,
     int a_shape_size,
     float* b_storage, 
     int* b_shape, 
     int* b_strides,
+    int b_size,
     int b_shape_size,
     int fn_id
 ) {
 
     // Allocate device memory
     float *d_out, *d_a, *d_b;
-    cudaMalloc(&d_a, out_size * sizeof(float));
-    cudaMalloc(&d_b, out_size * sizeof(float));
-    cudaMalloc(&d_out, out_size * sizeof(float));
+    cudaError_t status = cudaMalloc(&d_a, a_size * sizeof(float));
+    status = cudaMalloc(&d_b, b_size * sizeof(float));
+    status = cudaMalloc(&d_out, out_size * sizeof(float));
 
     int *d_out_shape, *d_out_strides, *d_a_shape, *d_a_strides, *d_b_shape, *d_b_strides;
-    cudaMalloc(&d_out_shape, out_shape_size * sizeof(int));
-    cudaMalloc(&d_out_strides, out_shape_size * sizeof(int));
-    cudaMalloc(&d_a_shape, a_shape_size * sizeof(int));
-    cudaMalloc(&d_a_strides, a_shape_size * sizeof(int));
-    cudaMalloc(&d_b_shape, b_shape_size * sizeof(int));
-    cudaMalloc(&d_b_strides, b_shape_size * sizeof(int));
+    status = cudaMalloc(&d_out_shape, out_shape_size * sizeof(int));
+    status = cudaMalloc(&d_out_strides, out_shape_size * sizeof(int));
+    status = cudaMalloc(&d_a_shape, a_shape_size * sizeof(int));
+    status = cudaMalloc(&d_a_strides, a_shape_size * sizeof(int));
+    status = cudaMalloc(&d_b_shape, b_shape_size * sizeof(int));
+    status = cudaMalloc(&d_b_strides, b_shape_size * sizeof(int));
 
     // Copy data to the device
-    cudaMemcpy(d_a, a_storage, out_size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_b, b_storage, out_size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_a, a_storage, a_size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_b, b_storage, b_size * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_out_shape, out_shape, out_shape_size * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_out_strides, out_strides, out_shape_size * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_a_shape, a_shape, a_shape_size * sizeof(int), cudaMemcpyHostToDevice);

@@ -17,6 +17,10 @@ from minitorch import DecoderLM
 from minitorch.cuda_kernel_ops import CudaKernelOps
 
 
+np.random.seed(11866)
+random.seed(11868)
+torch.manual_seed(11868)
+
 def get_tokenizer(examples, vocab_size, src_key, tgt_key, workdir):
     tokenizer = ByteLevelBPETokenizer()
 
@@ -113,7 +117,7 @@ def loss_fn(batch, model):
 def train(model, optimizer, examples, collate_fn, batch_size, desc):
     model.train()
     random.seed(10)
-    random.shuffle(examples)
+    # random.shuffle(examples)
 
     for i in (prog_bar := tqdm.trange(
             0, len(examples), batch_size, desc=f'Training ({desc})')):
@@ -261,13 +265,13 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     for epoch_idx in range(n_epochs):
         desc = f'epoch {epoch_idx} / {n_epochs}'
 
-        train(
-            model=model,
-            optimizer=optimizer,
-            examples=dataset['train'],
-            batch_size=batch_size,
-            collate_fn=collate_fn,
-            desc=desc)
+        # train(
+        #     model=model,
+        #     optimizer=optimizer,
+        #     examples=dataset['train'],
+        #     batch_size=batch_size,
+        #     collate_fn=collate_fn,
+        #     desc=desc)
 
         validation_loss = evaluate_loss(
             model=model,
@@ -297,9 +301,9 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
         eval_scores = evaluate_bleu(
             examples=dataset['test'], gen_sents=gen_sents, tgt_key=tgt_key)
         print(f'Epoch {epoch_idx}: {eval_scores}')
-
+        print({'validation_loss': validation_loss, **eval_scores})
         json.dump(
-            {'validation_loss': validation_loss, **eval_scores},
+            {'validation_loss': float(validation_loss), **eval_scores},
             open(f'{workdir}/eval_results_epoch{epoch_idx}.json', 'w'))
 
 
