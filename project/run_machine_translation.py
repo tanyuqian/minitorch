@@ -206,7 +206,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
          model_max_length=50,
          n_epochs=20,
          batch_size=64,
-         learning_rate=1e-4,
+         learning_rate=1e-3,
          samples_per_epoch=20000):
     backend = minitorch.TensorBackend(CudaKernelOps)
 
