@@ -207,12 +207,17 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
          n_epochs=20,
          batch_size=64,
          learning_rate=1e-3,
-         samples_per_epoch=20000):
+         samples_per_epoch=20000,
+         n_vocab=10000,
+         n_embd=256):
+    workdir = f'./workdir_vocab{n_vocab}_lr{learning_rate}_embd{n_embd}'
+    os.makedirs(workdir, exist_ok=True)
+
     backend = minitorch.TensorBackend(CudaKernelOps)
 
     config = {
-        'n_vocab'     : 10000,  # vocab_size
-        'n_embd'      : 256,   # n_embed
+        'n_vocab'     : n_vocab,  # vocab_size
+        'n_embd'      : n_embd,   # n_embed
         'n_head'      : 4,    # n_head
         'n_positions' : model_max_length,  # n_ctx == n_positions
         # 'n_layer'     : 4,    # n_layer
@@ -223,10 +228,6 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
 
     model = DecoderLM(**config)
     optimizer = minitorch.Adam(model.parameters(), lr=learning_rate)
-
-    workdir = './workdir_vocab{n_vocab}_lr{lr}'.format(
-        n_vocab=config['n_vocab'], lr=learning_rate)
-    os.makedirs(workdir, exist_ok=True)
 
     dataset = {
         split: datasets.load_dataset(dataset_name, split=split)['translation']
