@@ -8,18 +8,36 @@ import random
 import datasets
 import numpy as np
 from sacrebleu.metrics import BLEU
-from transformers import AutoConfig, AutoTokenizer, GPT2LMHeadModel
+from transformers import AutoTokenizer
 from tokenizers import ByteLevelBPETokenizer
-import torch
 
 import minitorch
 from minitorch import DecoderLM
 from minitorch.cuda_kernel_ops import CudaKernelOps
 
 
-np.random.seed(11866)
-random.seed(11868)
-torch.manual_seed(11868)
+def get_dataset(dataset_name, model_max_length):
+    dataset = {
+        split: datasets.load_dataset(dataset_name, split=split)['translation']
+        for split in ['train', 'validation', 'test']
+    }
+    src_key, tgt_key = 'de', 'en'
+
+    dataset = {
+        split: [
+            example for example in dataset[split]
+            if len(example[src_key].split()) + len(example[tgt_key].split()) < model_max_length
+        ] for split in dataset.keys()
+    }
+
+    dataset['test'] = dataset['test'][:100]             # 6750
+
+    print(json.dumps(
+        {'data_size': {split: len(dataset[split]) for split in dataset.keys()}},
+        indent=4))
+
+    return dataset
+
 
 def get_tokenizer(examples, vocab_size, src_key, tgt_key, workdir):
     tokenizer = ByteLevelBPETokenizer()
@@ -179,11 +197,8 @@ def generate(model,
         len_src = len(token_ids)
 
         while len(token_ids) <= model_max_length:
-            with torch.no_grad():
-                logits = model(
-                    idx=minitorch.tensor([token_ids], backend=backend)
-                ).to_numpy()[0, -1]
-                gen_id = np.argmax(logits).item()
+            logits = model(idx=minitorch.tensor([token_ids], backend=backend)).to_numpy()[0, -1]
+            gen_id = np.argmax(logits).item()
 
             if gen_id == tokenizer.vocab[f'<eos_{tgt_key}>']:
                 break
@@ -204,13 +219,17 @@ def evaluate_bleu(examples, gen_sents, tgt_key):
 
 
 def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
-         model_max_length=50,
+         model_max_length=40,
          n_epochs=20,
          batch_size=128,
          learning_rate=1e-3,
          samples_per_epoch=20000,
          n_vocab=10000,
-         n_embd=256):
+         n_embd=256,
+         seed=11111):
+    np.random.seed(seed)
+    random.seed(seed)
+
     workdir = f'./workdir_vocab{n_vocab}_lr{learning_rate}_embd{n_embd}'
     os.makedirs(workdir, exist_ok=True)
 
@@ -219,7 +238,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     config = {
         'n_vocab'     : n_vocab,  # vocab_size
         'n_embd'      : n_embd,   # n_embed
-        'n_head'      : 4,    # n_head
+        'n_head'      : 8,    # n_head
         'n_positions' : model_max_length,  # n_ctx == n_positions
         # 'n_layer'     : 4,    # n_layer
         'p_dropout'   : 0.1,  # x_pdrop
@@ -230,16 +249,8 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
     model = DecoderLM(**config)
     optimizer = minitorch.Adam(model.parameters(), lr=learning_rate)
 
-    dataset = {
-        split: datasets.load_dataset(dataset_name, split=split)['translation']
-        for split in ['train', 'validation', 'test']
-    }
-    src_key, tgt_key = 'de', 'en'
-
-    ### MAKE SMALLER
-    dataset['validation'] = dataset['validation'][:1000] # 7283
-    dataset['test'] = dataset['test'][:100]             # 6750
-    ###
+    dataset, src_key, tgt_key = get_dataset(
+        dataset_name=dataset_name, model_max_length=model_max_length)
 
     tokenizer = get_tokenizer(
         examples=dataset['train'],
