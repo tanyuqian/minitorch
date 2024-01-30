@@ -36,7 +36,7 @@ def get_dataset(dataset_name, model_max_length):
         {'data_size': {split: len(dataset[split]) for split in dataset.keys()}},
         indent=4))
 
-    return dataset
+    return dataset, src_key, tgt_key
 
 
 def get_tokenizer(examples, vocab_size, src_key, tgt_key, workdir):
