@@ -122,24 +122,56 @@ class Mul(Function):
 class PowerScalar(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, scalar: Tensor) -> Tensor:
+        """Calculates the element-wise power of a to a single scalar.
+        Equivalent to a ** scalar in numpy if a is a n-dimensional array and scalar is a scalar.
+
+        Parameters
+        ----------
+            ctx : Context
+                A context object you can temporarily store values to.
+            a : Tensor
+                The tensor to raise to the power of.
+            scalar : Tensor
+                The exponent of shape (1,).
+        
+        Returns
+        -------
+            output : Tensor
+                Tensor containing the result of raising every element of a to scalar.
+        """
+        ### BEGIN YOUR SOLUTION
         out = a.f.pow_scalar_zip(a, scalar)
         ctx.save_for_backward(a, scalar)
         return out
+        ### END YOUR SOLUTION
 
     @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        """
-        NOTE: This returns the incorrect grad for scalar, but this should only be used
-        for a scalar power. Technically it should only return one gradient, but bc. 
-        of minitorch, we return 2. 
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
+        """Calculates the gradient of the input a with respect to grad_output.
+        NOTE: miniTorch requires that we two gradients: one for the input tensor and scalar.
+        Technically, we should only return one gradient for the tensor since there is no gradient for a constant.
+        
+        Parameters
+        ----------
+            ctx : Context
+                The same context used in forward.
+            grad_output : Tensor
+                The gradient in the backward pass with respect to the output of forward. (Same shape as forward's output.)
+        
+        Returns
+        -------
+            gradients : Tuple[Tensor, float]
+                Tuple containing (gradient_for_a, 0.0)
+                gradient_for_a must be the correct gradient, but just return 0.0 for the gradient of scalar.
         """
         a, scalar = ctx.saved_values
-        return (
-            # This only works for scalar. This is derivative of exponential.
-            grad_output * (scalar * (a ** (scalar - 1))),
-            # This is numerically incorrect, but we return something for minitorch
-            grad_output 
-        )
+        grad_a    = None
+        
+        ### BEGIN YOUR SOLUTION
+        grad_a = grad_output * (scalar * (a ** (scalar - 1)))
+        ### END YOUR SOLUTION
+
+        return (grad_a, 0.0)
 
 class Tanh(Function):
     @staticmethod
@@ -474,8 +506,12 @@ def tensor_from_numpy(
     """NOTE: This should ONLY be used to initialize a tensor. 
     Any other usage could result in undefined behavior.
     """
+    # return tensor(ls.tolist(), backend, requires_grad)
+
     if ls.dtype != datatype:
         ls = ls.astype(datatype)
+
+    ls = np.ascontiguousarray(ls)
 
     res =  minitorch.Tensor(
         v = minitorch.TensorData(
@@ -495,6 +531,8 @@ def zeros_tensor_from_numpy(shape, backend: TensorBackend = SimpleBackend):
     """NOTE: This should ONLY be used to initialize a tensor. 
     Any other usage could result in undefined behavior.
     """
+    # return zeros(shape, backend)
+
     zs = np.zeros(shape).astype(datatype)
     return minitorch.Tensor(
         v = minitorch.TensorData(

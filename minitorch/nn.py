@@ -118,7 +118,7 @@ def softmax(input: Tensor, dim: int) -> Tensor:
     """
     # ASSIGN4.4
     # e = (input - max(input, dim)).exp()
-    e = (input).exp()
+    e = (input - Max.apply(input, tensor([dim]))).exp()
     partition = e.sum(dim=dim)
     return e / partition
     # END ASSIGN4.4
@@ -185,15 +185,6 @@ def dropout(input: Tensor, rate: float, ignore: bool = False) -> Tensor:
     return input * drop
     # END ASSIGN4.4
 
-def GELU(input: Tensor) -> Tensor: 
-    """
-    https://github.com/karpathy/minGPT/blob/master/mingpt/model.py
-
-    Implementation of the GELU activation function currently in Google BERT repo (identical to OpenAI GPT).
-    Reference: Gaussian Error Linear Units (GELU) paper: https://arxiv.org/abs/1606.08415
-    Note: This is the tanh approximation of GELU. 
-    """
-    return 0.5 * input * (1 + (np.sqrt(2 / math.pi) * (input + 0.044715 * (input ** 3))).tanh())
 
 def layer_norm(input: Tensor, eps: float = 1e-5) -> Tensor:
     # ASSIGN4.4
@@ -209,25 +200,60 @@ def layer_norm(input: Tensor, eps: float = 1e-5) -> Tensor:
 
     # END ASSIGN4.4
 
-def logsumexp(input: Tensor, dim: int) -> Tensor:
+
+###############################################################################
+# Assignment 2 Problem 2
+###############################################################################
+
+def GELU(input: Tensor) -> Tensor: 
+    """Applies the GELU activation function with 'tanh' approximation element-wise
+    https://pytorch.org/docs/stable/generated/torch.nn.GELU.html
     """
-    Calculates logsumexp with logsumexp trick
+    ### BEGIN YOUR SOLUTION
+    return 0.5 * input * (1 + (np.sqrt(2 / math.pi) * (input + 0.044715 * (input ** 3))).tanh())
+    ### END YOUR SOLUTION
+
+
+def logsumexp(input: Tensor, dim: int) -> Tensor:
+    """Calculates logsumexp with logsumexp trick for numerical stability
+    https://en.wikipedia.org/wiki/LogSumExp
+
+    Parameters
+    ----------
+        input : Tensor
+            The tensor to calculate logsumexp over
+        dim : int
+            The dimension to reduce over
+
+    Returns
+    -------
+        out : Tensor
+            The output tensor with the same number of dimensions as input (equiv. to keepdims=True)
+            NOTE: minitorch functions/tensor functions typically keep dimensions if you provide a dimensions.
     """  
+    ### BEGIN YOUR SOLUTION
     input_max = max(input, dim=dim)
     out = ((input - input_max).exp().sum(dim).log()) + input_max
-
     return out
+    ### END YOUR SOLUTION
+
 
 def one_hot(input: Tensor, num_classes: int) -> Tensor:
+    """Takes a Tensor containing indices of shape (*) and returns a tensor of shape (*, num_classes) 
+    that contains zeros except a 1 where the index of last dimension matches the corresponding value of the input tensor.
+    """
+    ### BEGIN YOUR SOLUTION
     # Constructs np.eye(num_embeddings)[x] -> for each elem of x is a one hot
     return tensor_from_numpy(
             np.eye(num_classes)[input.to_numpy().astype(int)], 
             backend=input.backend
         )
+    ### END YOUR SOLUTION
+
 
 def softmax_loss(logits: Tensor, target: Tensor) -> Tensor:
-    """Softmax + Cross Entropy Loss
-    Implement this 
+    """Softmax + Cross Entropy Loss function with 'reduction=None'.
+    Formula is provided in writeup.
 
     Args: 
         logits : (minibatch, C) Tensor of logits
@@ -236,10 +262,11 @@ def softmax_loss(logits: Tensor, target: Tensor) -> Tensor:
     Returns: 
         loss : (minibatch, )
     """
+    result = None
+    ### BEGIN YOUR SOLUTION
     batch_size, classes = logits.shape
     target_one_hot = one_hot(target, classes)
-    # import pdb
-    # pdb.set_trace()
     result = logsumexp(logits, dim=1) - (logits * target_one_hot).sum(1) # sum is to reduce
     # Flatten to be the same as torch.cross_entropy with reduction=None
+    ### END YOUR SOLUTION
     return result.view(batch_size, )

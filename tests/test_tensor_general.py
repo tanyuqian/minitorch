@@ -251,7 +251,7 @@ def test_cuda_permute(backend: str, data: DataObject) -> None:
     minitorch.grad_check(permute, t1)
 
 
-@pytest.mark.parametrize("dims", [(2,3,4,5,6), (10, 5, 15, 20, 30)])
+@pytest.mark.parametrize("dims", [(2,3,4,5,6), (10, 5, 15, 20, 30), (16, 16, 16, 16, 16)])
 @pytest.mark.parametrize("backend", backend_tests)
 def test_bmm(dims, backend):
     b, h, n, m, p = dims
@@ -273,9 +273,11 @@ def test_bmm(dims, backend):
         rtol=1e-5
     )
 
-### Problem 0
+###############################################################################
+# Assignment 2 Problem 1
+###############################################################################
 
-@pytest.mark.a2_0
+@pytest.mark.a2_1
 @pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
 @pytest.mark.parametrize("exp", [0, 1, 2, 3])
 @pytest.mark.parametrize("backend", backend_tests)
@@ -307,7 +309,7 @@ def test_pow_1(sizes, exp, backend):
     )
 
 
-@pytest.mark.a2_0
+@pytest.mark.a2_1
 @pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
 @pytest.mark.parametrize("exp", [0.5])
 @pytest.mark.parametrize("backend", backend_tests)
@@ -339,7 +341,7 @@ def test_pow_2(sizes, exp, backend):
     )
 
 
-@pytest.mark.a2_0
+@pytest.mark.a2_1
 @pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
 @pytest.mark.parametrize("exp", [0.5])
 @pytest.mark.parametrize("backend", backend_tests)

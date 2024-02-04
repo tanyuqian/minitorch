@@ -117,7 +117,7 @@ def test_log_softmax(t: Tensor) -> None:
     minitorch.grad_check(lambda a: minitorch.logsoftmax(a, dim=2), t)
 
 ########################################################################
-# ASSIGNMENT 2 TESTS
+# ASSIGNMENT 2 PROBLEM 2
 ########################################################################
 
 import numba
@@ -129,9 +129,10 @@ _BACKENDS = [pytest.param(
              )] 
 
 
+@pytest.mark.a2_2
 @pytest.mark.parametrize("sizes", GENERAL_SHAPES)
 @pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
-def test_a2_gelu(sizes, backend):
+def test_gelu(sizes, backend):
     x = np.random.randn(*sizes).astype(datatype)
     A = minitorch.tensor(x.tolist(), backend=backend, requires_grad=True)
     A_ = torch.tensor(x, dtype=torch.float32, requires_grad=True)
@@ -157,9 +158,10 @@ def test_a2_gelu(sizes, backend):
     )
 
 
+@pytest.mark.a2_2
 @pytest.mark.parametrize("sizes", GENERAL_SHAPES)
 @pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
-def test_a2_logsumexp(sizes, backend):
+def test_logsumexp(sizes, backend):
     dim=1
     
     x = np.random.randn(*sizes).astype(datatype)
@@ -187,10 +189,20 @@ def test_a2_logsumexp(sizes, backend):
     )
 
 
+@pytest.mark.a2_2
 @pytest.mark.parametrize("batches", [1, 64, 256])
 @pytest.mark.parametrize("classes", [2, 32, 128, 10000])
 @pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
-def test_a2_softmax_loss(batches, classes, backend):
+def test_one_hot(batches, classes, backend):
+    # raise NotImplementedError
+    pass
+
+
+@pytest.mark.a2_2
+@pytest.mark.parametrize("batches", [1, 64, 256])
+@pytest.mark.parametrize("classes", [2, 32, 128, 10000])
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_softmax_loss(batches, classes, backend):
     np.random.seed(10)
     # Classes=1 may be buggy
 
