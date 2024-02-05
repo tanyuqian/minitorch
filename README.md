@@ -66,9 +66,9 @@ The accompanying tests are in `tests/test_tensor_general.py`
 
 Run the following to test an individual function eg.
 ```
-python -m pytest -l -v -k "test_pow_1"
+python -m pytest -l -v -k "test_pow_1_student"
 ```
-Run the following to test all parts to problem 0.
+Run the following to test all parts to problem 1.
 ```
 python -m pytest -l -v -m a2_1
 ```
@@ -76,7 +76,7 @@ python -m pytest -l -v -m a2_1
 
 ## Problem 2: Implementing Tensor Functions
 
-You will be implementing all the necessary functions and modules to implement a decoder-only transformer model. **PLEASE READ THE _IMPLEMENTATION DETAILS_ SECTION BEFORE STARTING** regarding advice for working with miniTorch.
+You will be implementing all the necessary functions and modules to implement a decoder-only transformer model. **PLEASE PLEASE _PRETTY PLEASE_ READ THE _IMPLEMENTATION DETAILS_ SECTION BEFORE STARTING** regarding advice for working with miniTorch.
 
 Implement the GELU activation, logsumexp, one_hot, and softmax_loss functions in `minitorch/nn.py`
 The accompanying tests are in `tests/test_nn.py`
@@ -84,7 +84,7 @@ The accompanying tests are in `tests/test_nn.py`
 Hints:
 -  **one_hot**: Since MiniTorch doesn't support slicing/indexing with tensors, you'll want to utilize Numpy's eye function. You can use the .to_numpy() function for MiniTorch Tensors here. (Try to avoid using this in other functions because it's expensive.)
 
-- **softmax_los**: You'll want to make use of your previously implemented one_hot function.
+- **softmax_loss**: You'll want to make use of your previously implemented one_hot function.
 
 Run the following to test an individual function eg.
 ```
@@ -100,13 +100,16 @@ python -m pytest -l -v -m a2_2
 Implement the Embedding, Dropout, Linear, and LayerNorm1d modules in `minitorch/modules_basic.py`
 The accompanying tests are in `tests/test_modules_basic.py`
 
+Hints:
+- **Embedding**: You'll want to use your one_hot function to easily get embeddings for all your tokens.
+
 Run the following to test an individual function eg.
 ```
 python -m pytest -l -v -k "test_embedding"
 ```
-Run the following to test question 1.1
+Run the following to test all the parts to Problem 3
 ```
-python -m pytest -l -v -m a2_2
+python -m pytest -l -v -m a2_3
 ```
 
 
@@ -121,7 +124,7 @@ python -m pytest -l -v -k "test_multihead_attention"
 ```
 Run the following to test question 1.1
 ```
-python -m pytest -l -v -m a2_3
+python -m pytest -l -v -m a2_4
 ```
 
 
@@ -139,6 +142,10 @@ When initializing weights in a Module, **always** wrap them with `Parameter(.)`,
 
 We've provided a new set of tensor initialization functions eg. `tensor_from_numpy`.
 Feel free to use them in functions like one_hot, since minitorch doesn't support slicing, or other times **when you need numpy functions and minitorch doesn't support them**. Only initialize tensors with a new numpy nd.array (slicing is ok) ie. don't call new functions on them like .T before passing the nd.array into these functions. If you're getting errors, create a copy or deep copy of your numpy array, but you shouldn't need this.
+
+ - Initializing weights
+
+You'll need to initialize weights from certain distributions. You may want to do so with Numpy's random functions and use tensor_from_numpy to create the corresponding tensor.
 
  - Requiring Gradients
 
@@ -167,6 +174,10 @@ Always ensure your parameters are initialized with the correct backend (with you
  whereby matrices are multiplied elementwise across dimensions 0 and 1.
 
  - MiniTorch behavior when preserving dimensions
+
+ - Linear/Layernorm 
+
+ You need to make your input tensors 2D.
 
  - Possible errors
 

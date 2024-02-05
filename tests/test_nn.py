@@ -121,6 +121,7 @@ def test_log_softmax(t: Tensor) -> None:
 ########################################################################
 
 import numba
+import os
 
 GENERAL_SHAPES = [(2, 5), (3, 8), (64, 128)]
 _BACKENDS = [pytest.param(
@@ -129,10 +130,16 @@ _BACKENDS = [pytest.param(
              )] 
 
 
-@pytest.mark.a2_2
+@pytest.mark.ref_student_a2_2
 @pytest.mark.parametrize("sizes", GENERAL_SHAPES)
 @pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
-def test_gelu(sizes, backend):
+def test_ref_student_gelu(sizes, backend):
+    np.random.seed(10)
+    test_dir = f'./tests/data/gelu'
+    test_str = '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
     x = np.random.randn(*sizes).astype(datatype)
     A = minitorch.tensor(x.tolist(), backend=backend, requires_grad=True)
     A_ = torch.tensor(x, dtype=torch.float32, requires_grad=True)
@@ -157,13 +164,61 @@ def test_gelu(sizes, backend):
         rtol=1e-5
     )
 
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), x)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), A_.grad.detach().numpy())
 
-@pytest.mark.a2_2
+
+@pytest.mark.ref_teacher_a2_2
 @pytest.mark.parametrize("sizes", GENERAL_SHAPES)
 @pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
-def test_logsumexp(sizes, backend):
+def test_ref_teacher_gelu(sizes, backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/gelu'
+    test_str = '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    x = np.random.randn(*sizes).astype(datatype)
+    A = minitorch.tensor(x.tolist(), backend=backend, requires_grad=True)
+    A_ = torch.tensor(x, dtype=torch.float32, requires_grad=True)
+
+    result = minitorch.GELU(A)
+    result_ = torch.nn.functional.gelu(A_, approximate='tanh')
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5,
+        rtol=1e-5
+    )
+
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        A.grad.to_numpy(),
+        A_.grad.detach().numpy(),
+        atol=1e-5,
+        rtol=1e-5
+    )
+
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), x)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), A_.grad.detach().numpy())
+
+
+@pytest.mark.ref_student_a2_2
+@pytest.mark.parametrize("sizes", GENERAL_SHAPES)
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_ref_student_logsumexp(sizes, backend):
+    np.random.seed(10)
+    test_dir = f'./tests/data/logsumexp'
+    test_str = '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
     dim=1
-    
     x = np.random.randn(*sizes).astype(datatype)
     A = minitorch.tensor(x.tolist(), backend=backend)
     _A = torch.tensor(x, dtype=torch.float32, requires_grad=True)
@@ -188,6 +243,49 @@ def test_logsumexp(sizes, backend):
         rtol=1e-5
     )
 
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), x)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), _result.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), _A.grad.detach().numpy())
+
+@pytest.mark.ref_teacher_a2_2
+@pytest.mark.parametrize("sizes", GENERAL_SHAPES)
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_ref_teacher_logsumexp(sizes, backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/logsumexp'
+    test_str = '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    dim=1
+    x = np.random.randn(*sizes).astype(datatype)
+    A = minitorch.tensor(x.tolist(), backend=backend)
+    _A = torch.tensor(x, dtype=torch.float32, requires_grad=True)
+
+    result = minitorch.logsumexp(A, dim=dim)
+    _result = torch.logsumexp(_A, dim=dim, keepdim=True)
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        _result.detach().numpy(),
+        atol=1e-5,
+        rtol=1e-5
+    )
+
+    result.sum().backward()
+    _result.sum().backward()
+
+    np.testing.assert_allclose(
+        A.grad.to_numpy(),
+        _A.grad.detach().numpy(),
+        atol=1e-5,
+        rtol=1e-5
+    )
+
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), x)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), _result.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), _A.grad.detach().numpy())
+
 
 @pytest.mark.a2_2
 @pytest.mark.parametrize("batches", [1, 64, 256])
@@ -198,17 +296,21 @@ def test_one_hot(batches, classes, backend):
     pass
 
 
-@pytest.mark.a2_2
+@pytest.mark.ref_student_a2_2
 @pytest.mark.parametrize("batches", [1, 64, 256])
 @pytest.mark.parametrize("classes", [2, 32, 128, 10000])
 @pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
-def test_softmax_loss(batches, classes, backend):
+def test_ref_student_softmax_loss(batches, classes, backend):
     np.random.seed(10)
+    test_dir = f'./tests/data/softmax_loss'
+    test_str = str(batches) + '_' + str(classes)
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
     # Classes=1 may be buggy
 
     logits_np = np.random.randn(batches, classes).astype(datatype)
     targets_np = np.random.randint(low=0, high=classes, size=(batches,))
-
 
     logits = minitorch.tensor_from_numpy(logits_np, backend=backend, requires_grad=True)
     targets = minitorch.tensor_from_numpy(targets_np, backend=backend, requires_grad=True)
@@ -230,8 +332,61 @@ def test_softmax_loss(batches, classes, backend):
     _result_none.sum().backward()
 
     np.testing.assert_allclose(
-        logits.to_numpy(), 
-        _logits.detach().numpy(),
+        logits.grad.to_numpy(), 
+        _logits.grad.detach().numpy(),
         atol=1e-5, 
         rtol=1e-5
     )
+
+    np.save(os.path.join(test_dir, f'{test_str}_logits.npy'), logits_np)
+    np.save(os.path.join(test_dir, f'{test_str}_targets.npy'), targets_np)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), _result_none.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_logits_grad.npy'), _logits.grad.detach().numpy())
+
+
+@pytest.mark.ref_teacher_a2_2
+@pytest.mark.parametrize("batches", [1, 64, 256])
+@pytest.mark.parametrize("classes", [2, 32, 128, 10000])
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_ref_teacher_softmax_loss(batches, classes, backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/softmax_loss'
+    test_str = str(batches) + '_' + str(classes)
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    # Classes=1 may be buggy
+
+    logits_np = np.random.randn(batches, classes).astype(datatype)
+    targets_np = np.random.randint(low=0, high=classes, size=(batches,))
+
+    logits = minitorch.tensor_from_numpy(logits_np, backend=backend, requires_grad=True)
+    targets = minitorch.tensor_from_numpy(targets_np, backend=backend, requires_grad=True)
+
+    _logits = torch.tensor(logits_np, dtype=torch.float32, requires_grad=True)
+    _targets = torch.tensor(targets_np, dtype=torch.long)
+
+    result = minitorch.softmax_loss(logits, targets)
+    _result_none = torch.nn.functional.cross_entropy(_logits, _targets, reduction='none')
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        _result_none.detach().numpy(),
+        atol=1e-5,
+        rtol=1e-5
+    )
+
+    result.sum().backward()
+    _result_none.sum().backward()
+
+    np.testing.assert_allclose(
+        logits.grad.to_numpy(), 
+        _logits.grad.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    np.save(os.path.join(test_dir, f'{test_str}_logits.npy'), logits_np)
+    np.save(os.path.join(test_dir, f'{test_str}_targets.npy'), targets_np)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), _result_none.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_logits_grad.npy'), _logits.grad.detach().numpy())
