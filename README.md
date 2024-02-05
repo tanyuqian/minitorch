@@ -180,6 +180,7 @@ Always ensure your parameters are initialized with the correct backend (with you
  You need to make your input tensors 2D.
 
  - Possible errors
+ -  you may be using the wrong backend
 
 
 ### Machine Translation (IWSLT-14)
