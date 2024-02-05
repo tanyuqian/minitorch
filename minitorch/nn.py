@@ -118,7 +118,8 @@ def softmax(input: Tensor, dim: int) -> Tensor:
     """
     # ASSIGN4.4
     # e = (input - max(input, dim)).exp()
-    e = (input - Max.apply(input, tensor([dim]))).exp()
+    # e = (input - Max.apply(input, tensor([dim]))).exp()
+    e = input.exp()
     partition = e.sum(dim=dim)
     return e / partition
     # END ASSIGN4.4
@@ -222,8 +223,7 @@ def logsumexp(input: Tensor, dim: int) -> Tensor:
         input : The tensor to calculate logsumexp over
         dim : The dimension to reduce over
 
-    Returns
-    -------
+    Returns:
         out : The output tensor with the same number of dimensions as input (equiv. to keepdims=True)
             NOTE: minitorch functions/tensor functions typically keep dimensions if you provide a dimensions.
     """  
