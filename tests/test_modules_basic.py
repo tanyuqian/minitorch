@@ -116,9 +116,62 @@ def test_ref_teacher_embedding(batch_size, num_embeddings, seq_len, embedding_di
     np.save(os.path.join(test_dir, f'{test_str}_weight_grad.npy'), layer_.weight.grad.detach().numpy())
 
 
+@pytest.mark.ref_student_a2_3
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_ref_student_dropout(backend):
+    np.random.seed(10)
+    test_dir = f'./tests/data/dropout'
+    test_str = 'dropout'
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
 
-def test_dropout():
-    pass
+    # Dropout ratio 0 means nothing gets deleted 
+    data = np.random.randn(10, 10)
+    x = minitorch.tensor(data.tolist(), backend=backend)
+    layer = minitorch.Dropout(p_dropout=0)
+    result = layer(x)
+    np.testing.assert_allclose(result.to_numpy(), data, atol=1e-5, rtol=1e-5)
+
+    # Nothing should be dropped when not training
+    layer = minitorch.Dropout(p_dropout=0.5)
+    layer.training = False
+    result = layer(x)
+    np.testing.assert_allclose(result.to_numpy(), data, atol=1e-5, rtol=1e-5)
+
+    layer = minitorch.Dropout(p_dropout = 0.5)
+    layer.training = True
+    ref_sol = layer(x).to_numpy()
+
+    np.save(os.path.join(test_dir, f'{test_str}.npy'), ref_sol)
+
+
+@pytest.mark.ref_teacher_a2_3
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_ref_teacher_dropout(backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/dropout'
+    test_str = 'dropout'
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    # Dropout ratio 0 means nothing gets deleted 
+    data = np.random.randn(10, 10)
+    x = minitorch.tensor(data.tolist(), backend=backend)
+    layer = minitorch.Dropout(p_dropout=0)
+    result = layer(x)
+    np.testing.assert_allclose(result.to_numpy(), data, atol=1e-5, rtol=1e-5)
+
+    # Nothing should be dropped when not training
+    layer = minitorch.Dropout(p_dropout=0.5)
+    layer.training = False
+    result = layer(x)
+    np.testing.assert_allclose(result.to_numpy(), data, atol=1e-5, rtol=1e-5)
+
+    layer = minitorch.Dropout(p_dropout = 0.5)
+    layer.training = True
+    ref_sol = layer(x).to_numpy()
+
+    np.save(os.path.join(test_dir, f'{test_str}.npy'), ref_sol)
 
 
 @pytest.mark.ref_student_a2_3

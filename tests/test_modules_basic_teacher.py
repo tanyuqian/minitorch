@@ -57,8 +57,31 @@ def test_embedding_teacher(batch_size, num_embeddings, seq_len, embedding_dim, b
 
 ################################ DROPOUT ########################################
 
-def test_dropout():
-    pass
+@pytest.mark.a2_3
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_dropout_teacher(backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/dropout'
+    result_ = load_numpy_array(os.path.join(test_dir, 'dropout.npy'))
+
+    # Dropout ratio 0 means nothing gets deleted 
+    data = np.random.randn(10, 10)
+    x = minitorch.tensor(data.tolist(), backend=backend)
+    layer = minitorch.Dropout(p_dropout=0)
+    result = layer(x)
+    np.testing.assert_allclose(result.to_numpy(), data, atol=1e-5, rtol=1e-5)
+
+    # Nothing should be dropped when not training
+    layer = minitorch.Dropout(p_dropout=0.5)
+    layer.training = False
+    result = layer(x)
+    np.testing.assert_allclose(result.to_numpy(), data, atol=1e-5, rtol=1e-5)
+
+    layer = minitorch.Dropout(p_dropout = 0.5)
+    layer.training = True
+    result = layer(x)
+    np.testing.assert_allclose(result.to_numpy(), result_, atol=1e-5, rtol=1e-5)
+
 
 ################################ LINEAR ########################################
 

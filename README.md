@@ -62,7 +62,7 @@ You can look up the relevant mathematical functions here: <a href="https://docs.
 
 ### 4. Run the tests below.
 
-The accompanying tests are in `tests/test_tensor_general.py`
+The accompanying tests are in `tests/test_tensor_general_student.py`
 
 Run the following to test an individual function eg.
 ```
@@ -79,7 +79,7 @@ python -m pytest -l -v -m a2_1
 You will be implementing all the necessary functions and modules to implement a decoder-only transformer model. **PLEASE PLEASE _PRETTY PLEASE_ READ THE _IMPLEMENTATION DETAILS_ SECTION BEFORE STARTING** regarding advice for working with miniTorch.
 
 Implement the GELU activation, logsumexp, one_hot, and softmax_loss functions in `minitorch/nn.py`
-The accompanying tests are in `tests/test_nn.py`
+The accompanying tests are in `tests/test_nn_student.py`
 
 Hints:
 -  **one_hot**: Since MiniTorch doesn't support slicing/indexing with tensors, you'll want to utilize Numpy's eye function. You can use the .to_numpy() function for MiniTorch Tensors here. (Try to avoid using this in other functions because it's expensive.)
@@ -88,7 +88,7 @@ Hints:
 
 Run the following to test an individual function eg.
 ```
-python -m pytest -l -v -k "test_gelu"
+python -m pytest -l -v -k "test_gelu_student"
 ```
 Run the following to test all the parts to Problem 2
 ```
@@ -98,14 +98,14 @@ python -m pytest -l -v -m a2_2
 
 ## Problem 3: Implementing Basic Modules
 Implement the Embedding, Dropout, Linear, and LayerNorm1d modules in `minitorch/modules_basic.py`
-The accompanying tests are in `tests/test_modules_basic.py`
+The accompanying tests are in `tests/test_modules_basic_student.py`
 
 Hints:
 - **Embedding**: You'll want to use your one_hot function to easily get embeddings for all your tokens.
 
 Run the following to test an individual function eg.
 ```
-python -m pytest -l -v -k "test_embedding"
+python -m pytest -l -v -k "test_embedding_student"
 ```
 Run the following to test all the parts to Problem 3
 ```
@@ -116,11 +116,11 @@ python -m pytest -l -v -m a2_3
 ## Problem 4: Implementing a Decoder-only Transformer
 
 Implement the MultiHeadAttention, FeedForward, TransformerLayer, and DecoderLM module in `minitorch/modules_transfomer.py`.
-The accompanying tests are in `tests/test_modules_transformer.py`
+The accompanying tests are in `tests/test_modules_transformer_student.py`
 
 Run the following to test an individual function eg.
 ```
-python -m pytest -l -v -k "test_multihead_attention"
+python -m pytest -l -v -k "test_multihead_attention_student"
 ```
 Run the following to test question 1.1
 ```
