@@ -218,17 +218,13 @@ def logsumexp(input: Tensor, dim: int) -> Tensor:
     """Calculates logsumexp with logsumexp trick for numerical stability
     https://en.wikipedia.org/wiki/LogSumExp
 
-    Parameters
-    ----------
-        input : Tensor
-            The tensor to calculate logsumexp over
-        dim : int
-            The dimension to reduce over
+    Args:
+        input : The tensor to calculate logsumexp over
+        dim : The dimension to reduce over
 
     Returns
     -------
-        out : Tensor
-            The output tensor with the same number of dimensions as input (equiv. to keepdims=True)
+        out : The output tensor with the same number of dimensions as input (equiv. to keepdims=True)
             NOTE: minitorch functions/tensor functions typically keep dimensions if you provide a dimensions.
     """  
     ### BEGIN YOUR SOLUTION

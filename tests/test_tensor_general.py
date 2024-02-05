@@ -7,6 +7,8 @@ import torch
 from hypothesis import given, settings
 from hypothesis.strategies import DataObject, data, integers, lists, permutations
 
+import os
+
 import minitorch
 from minitorch import MathTestVariable, Tensor, TensorBackend, grad_check
 
@@ -277,13 +279,21 @@ def test_bmm(dims, backend):
 # Assignment 2 Problem 1
 ###############################################################################
 
-@pytest.mark.a2_1
+
+################################ POW 1 ########################################
+
+@pytest.mark.ref_student_a2_1
 @pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
 @pytest.mark.parametrize("exp", [0, 1, 2, 3])
 @pytest.mark.parametrize("backend", backend_tests)
-def test_pow_1(sizes, exp, backend):
+def test_ref_student_pow_1(sizes, exp, backend):
+    np.random.seed(10)
+    test_dir = f'./tests/data/pow_1'
+    test_str = str(exp)+'_' + '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
     data = np.random.randn(*sizes)
-    
     x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
     x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
 
@@ -307,15 +317,64 @@ def test_pow_1(sizes, exp, backend):
         atol=1e-5, 
         rtol=1e-5
     )
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
 
 
-@pytest.mark.a2_1
+@pytest.mark.ref_teacher_a2_1
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("exp", [0, 1, 2, 3])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_ref_teacher_pow_1(sizes, exp, backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/pow_1'
+    test_str = str(exp)+'_' + '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    data = np.random.randn(*sizes)
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = x ** exp
+    result_ = x_ ** exp
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
+
+################################ POW 2 ########################################
+
+@pytest.mark.ref_student_a2_1
 @pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
 @pytest.mark.parametrize("exp", [0.5])
 @pytest.mark.parametrize("backend", backend_tests)
-def test_pow_2(sizes, exp, backend):
+def test_ref_student_pow_2(sizes, exp, backend):
+    np.random.seed(10)
+    test_dir = f'./tests/data/pow_2'
+    test_str = str(exp)+'_' + '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
     data = np.random.uniform(0, 1, size=sizes)
-    
     x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
     x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
 
@@ -340,12 +399,143 @@ def test_pow_2(sizes, exp, backend):
         rtol=1e-5
     )
 
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
 
-@pytest.mark.a2_1
+
+@pytest.mark.ref_teacher_a2_1
 @pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
 @pytest.mark.parametrize("exp", [0.5])
 @pytest.mark.parametrize("backend", backend_tests)
-def test_tanh(sizes, exp, backend):
+def test_ref_teacher_pow_2(sizes, exp, backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/pow_2'
+    test_str = str(exp)+'_' + '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    data = np.random.uniform(0, 1, size=sizes)
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = x ** exp
+    result_ = x_ ** exp
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
+
+################################ POW 3 ########################################
+
+@pytest.mark.ref_student_a2_1
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("exp", [1, 2])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_ref_student_pow_3(sizes, exp, backend):
+    np.random.seed(10)
+    test_dir = f'./tests/data/pow_3'
+    test_str = str(exp)+'_' + '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    data = np.random.randn(*sizes)
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = (x ** exp) * 1.34 
+    result_ = (x_ ** exp) * 1.34 
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
+
+
+@pytest.mark.ref_teacher_a2_1
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("exp", [1, 2])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_ref_teacher_pow_3(sizes, exp, backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/pow_3'
+    test_str = str(exp)+'_' + '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    data = np.random.randn(*sizes)
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = (x ** exp) * 1.34 
+    result_ = (x_ ** exp) * 1.34 
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
+
+################################ TANH 1 ########################################
+
+@pytest.mark.ref_student_a2_1
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_ref_student_tanh_1(sizes, backend):
+    np.random.seed(10)
+    test_dir = f'./tests/data/tanh_1'
+    test_str = '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
     data = np.random.randn(*sizes)
     
     x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
@@ -371,3 +561,131 @@ def test_tanh(sizes, exp, backend):
         atol=1e-5, 
         rtol=1e-5
     )
+
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
+
+
+@pytest.mark.ref_teacher_a2_1
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_ref_teacher_tanh_1(sizes, backend):
+    np.random.seed(10)
+    test_dir = f'./tests/data_teacher/tanh_1'
+    test_str = '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    data = np.random.randn(*sizes)
+    
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = x.tanh()
+    result_ = torch.tanh(x_)
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
+
+################################ TANH 2 ########################################
+
+@pytest.mark.ref_student_a2_1
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_ref_student_tanh_2(sizes, backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data/tanh_2'
+    test_str = '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    data = np.random.randn(*sizes)
+    
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = (x.tanh() + 1.0) * 0.5
+    result_ = (torch.tanh(x_) + 1.0) * 0.5
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())
+
+
+@pytest.mark.ref_teacher_a2_1
+@pytest.mark.parametrize("sizes", [(5,), (128,), (1, 64), (128, 256)])
+@pytest.mark.parametrize("backend", backend_tests)
+def test_ref_teacher_tanh_2(sizes, backend):
+    np.random.seed(20)
+    test_dir = f'./tests/data_teacher/tanh_2'
+    test_str = '_'.join(map(str, sizes))
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    data = np.random.randn(*sizes)
+    
+    x = minitorch.tensor(data.tolist(), backend=shared[backend], requires_grad=True)
+    x_ = torch.tensor(data, dtype=torch.float32, requires_grad=True)
+
+    result = (x.tanh() + 1.0) * 0.5
+    result_ = (torch.tanh(x_) + 1.0) * 0.5
+
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        result_.detach().numpy(),
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    # Backward
+    result.sum().backward()
+    result_.sum().backward()
+
+    np.testing.assert_allclose(
+        x.grad.to_numpy(), 
+        x_.grad.detach().numpy(), 
+        atol=1e-5, 
+        rtol=1e-5
+    )
+
+    np.save(os.path.join(test_dir, f'{test_str}_data.npy'), data)
+    np.save(os.path.join(test_dir, f'{test_str}_result.npy'), result_.detach().numpy())
+    np.save(os.path.join(test_dir, f'{test_str}_grad.npy'), x_.grad.detach().numpy())

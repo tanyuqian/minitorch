@@ -78,17 +78,21 @@ python -m pytest -l -v -m a2_1
 
 You will be implementing all the necessary functions and modules to implement a decoder-only transformer model. **PLEASE READ THE _IMPLEMENTATION DETAILS_ SECTION BEFORE STARTING** regarding advice for working with miniTorch.
 
-### 1.1: Tensor Functions
-Implement the one_hot, GELU activation, logsumexp, and softmax_loss functions in `minitorch/nn.py`
+Implement the GELU activation, logsumexp, one_hot, and softmax_loss functions in `minitorch/nn.py`
 The accompanying tests are in `tests/test_nn.py`
+
+Hints:
+-  **one_hot**: Since MiniTorch doesn't support slicing/indexing with tensors, you'll want to utilize Numpy's eye function. You can use the .to_numpy() function for MiniTorch Tensors here. (Try to avoid using this in other functions because it's expensive.)
+
+- **softmax_los**: You'll want to make use of your previously implemented one_hot function.
 
 Run the following to test an individual function eg.
 ```
 python -m pytest -l -v -k "test_gelu"
 ```
-Run the following to test question 1.1
+Run the following to test all the parts to Problem 2
 ```
-python -m pytest -l -v -m a2_1
+python -m pytest -l -v -m a2_2
 ```
 
 
@@ -161,6 +165,8 @@ Always ensure your parameters are initialized with the correct backend (with you
  We support batched matrix multiplication: 
  Given tensors A and B of shape (a, b, m, n) and (a, b, n, p), A @ B will be of shape (a, b, m, p),
  whereby matrices are multiplied elementwise across dimensions 0 and 1.
+
+ - MiniTorch behavior when preserving dimensions
 
  - Possible errors
 

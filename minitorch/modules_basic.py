@@ -19,30 +19,33 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 class Embedding(Module):
     def __init__(self, num_embeddings: int, embedding_dim: int, backend: TensorBackend):
         super().__init__()
+        """
+        Maps one-hot word vectors from a dictionary of fixed size to embeddings.
+
+        Parameters:
+            num_embeddings - The vocabulary size
+            embedding_dim  - The size of each embedding vector
+
+        Variables:
+            weight - The learnable weights of shape (num_embeddings, embedding_dim) initialized from N(0, 1).
+        """
         self.backend = backend
         self.num_embeddings = num_embeddings # Vocab size
         self.embedding_dim  = embedding_dim  # Embedding Dimension
-        # Follow torch with initialization from standard normal bc. randn defaults to std. norm
+        ### BEGIN YOUR SOLUTION
         self.weights = Parameter(
             tensor_from_numpy(np.random.randn(num_embeddings, embedding_dim), backend=backend, requires_grad=True)
         )
-    
-    def one_hot(self, x):
-        # Constructs np.eye(num_embeddings)[x] -> for each elem of x is a one hot
-        return tensor_from_numpy(
-            np.eye(self.num_embeddings)[x.to_numpy().astype(int)], 
-            backend=self.backend
-        )
+        ### END YOUR SOLUTION
     
     def forward(self, x):
-        """
-        Maps word indices to one-hot vectors, and projects to embedding vectors
+        """Maps word indices to one-hot vectors, and projects to embedding vectors.
 
         Input:
-        x of shape (bs, seq_len)
+            x - Tensor of shape (bs, seq_len)
 
         Output:
-        output of shape (bs, seq_len, embedding_dim)
+            output - Tensor of shape (bs, seq_len, embedding_dim)
         """
         bs, seq_len = x.shape
         x = x.view(seq_len * bs,)
