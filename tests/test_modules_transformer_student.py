@@ -151,8 +151,8 @@ def test_transformer_layer_1_student(batch_size, seq_len, n_embd, num_heads, p_d
 
 @pytest.mark.a2_4
 @pytest.mark.parametrize("batch_size", [2, 4])
-@pytest.mark.parametrize("seq_len",   [4, 16])
-@pytest.mark.parametrize("n_embd",    [32, 64])
+@pytest.mark.parametrize("seq_len",   [4, 32])
+@pytest.mark.parametrize("n_embd",    [16, 32])
 @pytest.mark.parametrize("num_heads", [1, 8])
 @pytest.mark.parametrize("p_dropout", [0.0])
 @pytest.mark.parametrize("ln_eps", [1e-5])

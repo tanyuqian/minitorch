@@ -117,9 +117,8 @@ def softmax(input: Tensor, dim: int) -> Tensor:
         softmax tensor
     """
     # ASSIGN4.4
-    # e = (input - max(input, dim)).exp()
-    # e = (input - Max.apply(input, tensor([dim]))).exp()
-    e = input.exp()
+    e = (input - Max.apply(input, tensor([dim]))).exp()
+    # e = input.exp() # Original, numerically unstable. 
     partition = e.sum(dim=dim)
     return e / partition
     # END ASSIGN4.4

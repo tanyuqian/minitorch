@@ -561,8 +561,8 @@ def test_ref_teacher_transformer_layer_1(batch_size, seq_len, n_embd, num_heads,
 
 @pytest.mark.ref_student_a2_4
 @pytest.mark.parametrize("batch_size", [2, 4])
-@pytest.mark.parametrize("seq_len",   [4, 16])
-@pytest.mark.parametrize("n_embd",    [32, 64])
+@pytest.mark.parametrize("seq_len",   [4, 32])
+@pytest.mark.parametrize("n_embd",    [16, 32])
 @pytest.mark.parametrize("num_heads", [1, 8])
 @pytest.mark.parametrize("p_dropout", [0.0])
 @pytest.mark.parametrize("ln_eps", [1e-5])
@@ -695,8 +695,8 @@ def test_ref_student_transformer_layer_2(batch_size, seq_len, n_embd, num_heads,
 
 @pytest.mark.ref_teacher_a2_4
 @pytest.mark.parametrize("batch_size", [2, 4])
-@pytest.mark.parametrize("seq_len",   [4, 16])
-@pytest.mark.parametrize("n_embd",    [32, 64])
+@pytest.mark.parametrize("seq_len",   [4, 32])
+@pytest.mark.parametrize("n_embd",    [16, 32])
 @pytest.mark.parametrize("num_heads", [1, 8])
 @pytest.mark.parametrize("p_dropout", [0.0])
 @pytest.mark.parametrize("ln_eps", [1e-5])

@@ -115,6 +115,7 @@ def test_log_softmax(t: Tensor) -> None:
         assert_close(q[i], q2[i])
 
     minitorch.grad_check(lambda a: minitorch.logsoftmax(a, dim=2), t)
+    
 
 ########################################################################
 # ASSIGNMENT 2 PROBLEM 2
@@ -128,6 +129,18 @@ _BACKENDS = [pytest.param(
                  minitorch.TensorBackend(minitorch.CudaKernelOps), 
                  marks=pytest.mark.skipif(not numba.cuda.is_available(), reason="No GPU")
              )] 
+
+@pytest.mark.parametrize("sizes", GENERAL_SHAPES)
+@pytest.mark.parametrize("backend", _BACKENDS, ids=["CudaKernelOps"])
+def test_softmax_functional(sizes, backend):
+    x = np.random.randn(*sizes).astype(datatype) * 10000
+    A = minitorch.tensor(x.tolist(), backend=backend, requires_grad=True)
+    A_ = torch.tensor(x, requires_grad=True, dtype=torch.float32)
+
+    result_ = torch.nn.functional.softmax(A_, dim=1)
+    result = minitorch.nn.softmax(A, dim=1)
+
+    np.testing.assert_allclose(result.to_numpy(), result_.detach().numpy(), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.ref_student_a2_2
